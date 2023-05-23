@@ -3895,8 +3895,8 @@
     (effects (font (size 1.27 1.27)) (justify right bottom))
     (uuid 5d07dd81-3d22-4f77-929c-49cd42cc16cc)
   )
-  (text "From power supply\nFlap unit (MR)\nV+ ~ outputs\nV+ = 5V\nVDO = 24V"
-    (at 217.805 103.505 180)
+  (text "From power supply\nFlap unit (MR)\nV+ ~ outputs\nV+ = 5V\nVDO = VR = 24V"
+    (at 217.17 103.505 180)
     (effects (font (size 1.27 1.27)) (justify right bottom))
     (uuid 7cde1674-c9cd-4a1d-a894-6056d1962d9c)
   )
@@ -3908,8 +3908,8 @@
     (effects (font (size 1.27 1.27)) (justify right bottom))
     (uuid a09bf888-8fdd-4cc4-84f7-00ee5c53d9dc)
   )
-  (text "From power supply\nLogical (ML)\nPH ~ inputs\nVCC = VPH = 5V"
-    (at 218.44 36.83 180)
+  (text "From power supply\nLogical (ML)\nPH ~ inputs\nVCC = 5V\nVPH = 15V"
+    (at 217.17 36.83 180)
     (effects (font (size 1.27 1.27)) (justify right bottom))
     (uuid a71195f1-ad5b-4795-9679-7ce992ff1ebb)
   )
