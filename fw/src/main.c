@@ -8,6 +8,8 @@
 #include <avr/io.h>
 #include <avr/wdt.h>
 
+#include "io.h"
+
 ///////////////////////////////////////////////////////////////////////////////
 
 int main();
@@ -28,16 +30,22 @@ int main() {
 
 static inline void init() {
 	ACSR |= ACD;  // analog comparator disable
-	//TIMSK = 0;
+	TIMSK0 = TIMSK1 = TIMSK2 = 0;
 
-	//io_init();
-	//set_output(PIN_LED_RED, true);
-	//set_output(PIN_LED_YELLOW, true);
+	io_init();
+	io_led_green_on();
+	io_led_yellow_on();
+	io_led_red_on();
 
 	// Timer 2 @ 1 kHz (1 ms)
 	//TCCR2 = (1 << WGM21) | (1 << CS21) | (1 << CS20); // CTC; prescaler 32×
 	//OCR2 = 248; // 1 ms
 	//TIMSK |= (1 << OCIE2);
+
+	_delay_ms(200);
+	io_led_green_off();
+	io_led_yellow_off();
+	io_led_red_off();
 
 	sei(); // enable interrupts globally
 	wdt_enable(WDTO_250MS);
