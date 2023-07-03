@@ -1,6 +1,6 @@
 MCU = atmega328p
 FUSES = -U lfuse:w:0xfe:m -U hfuse:w:0xd9:m -U lock:w:0xFF:m
-F_CPU = 14742600
+F_CPU = 14745600
 FORMAT = ihex
 BUILDDIR = build
 TARGET = $(BUILDDIR)/solari-control
