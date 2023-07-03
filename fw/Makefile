@@ -1,6 +1,5 @@
 MCU = atmega328p
-# Preserve EEPROM during chip-erase cycle
-FUSES = -U lfuse:w:0x14:m -U hfuse:w:0xD1:m -U lock:w:0xFF:m
+FUSES = -U lfuse:w:0xfe:m -U hfuse:w:0xd9:m -U lock:w:0xFF:m
 F_CPU = 14742600
 FORMAT = ihex
 BUILDDIR = build
