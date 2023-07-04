@@ -24,7 +24,7 @@ int main() {
 	init();
 
 	while (true) {
-		wdt_reset();
+		// wdt_reset();
 	}
 }
 
@@ -42,13 +42,15 @@ static inline void init() {
 	//OCR2 = 248; // 1 ms
 	//TIMSK |= (1 << OCIE2);
 
-	_delay_ms(200);
+	for (uint8_t i = 0; i < 5; i++)
+		_delay_ms(200);
+
 	io_led_green_off();
 	io_led_yellow_off();
 	io_led_red_off();
 
 	sei(); // enable interrupts globally
-	wdt_enable(WDTO_250MS);
+	// wdt_enable(WDTO_250MS);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

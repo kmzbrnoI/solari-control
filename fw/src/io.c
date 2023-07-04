@@ -2,5 +2,6 @@
 #include "io.h"
 
 void io_init(void) {
-	DDRC = 0x07;
+	DDRC = 0x1F;
+	DDRD = 0xFC;
 }
