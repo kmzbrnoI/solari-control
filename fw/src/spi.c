@@ -24,7 +24,7 @@ void spi_write(uint8_t* data, uint8_t size) {
 	_delay_us(1);
 
 	for (uint8_t i = 0; i < size; i++) {
-		SPDR = data[i];
+		SPDR = ~data[i];
 		while (!(SPSR & (1<<SPIF)));
 	}
 
