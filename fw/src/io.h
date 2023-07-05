@@ -14,6 +14,13 @@ inline void io_led_yellow_off() { PORTC &= ~(1 << PC1); }
 inline void io_led_red_on() { PORTC |= (1 << PC2); }
 inline void io_led_red_off() { PORTC &= ~(1 << PC2); }
 
+inline bool io_led_green() { return (PORTC >> PC0) & 1; }
+inline bool io_led_yellow() { return (PORTC >> PC1) & 1; }
+inline bool io_led_red() { return (PORTC >> PC2) & 1; }
+inline void io_led_green_toggle() { if (io_led_green()) io_led_green_off(); else io_led_green_on(); }
+inline void io_led_yellow_toggle() { if (io_led_yellow()) io_led_yellow_off(); else io_led_yellow_on(); }
+inline void io_led_red_toggle() { if (io_led_red()) io_led_red_off(); else io_led_red_on(); }
+
 inline void io_rel1_on() { PORTD |= (1 << PD6); }
 inline void io_rel1_off() { PORTD &= ~(1 << PD6); }
 inline void io_rel2_on() { PORTD |= (1 << PD7); }
