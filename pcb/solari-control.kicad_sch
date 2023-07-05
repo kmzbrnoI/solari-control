@@ -5699,7 +5699,7 @@
     (property "Reference" "R24" (id 0) (at 116.967 142.0403 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
-    (property "Value" "10k" (id 1) (at 116.967 144.5772 0)
+    (property "Value" "2k2" (id 1) (at 116.967 144.5772 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" (id 2) (at 116.967 142.875 90)
@@ -5841,7 +5841,7 @@
     (property "Reference" "R22" (id 0) (at 123.317 132.5153 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
-    (property "Value" "10k" (id 1) (at 123.317 135.0522 0)
+    (property "Value" "2k2" (id 1) (at 123.317 135.0522 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" (id 2) (at 123.317 133.35 90)
@@ -8221,13 +8221,13 @@
       (reference "R21") (unit 1) (value "10k") (footprint "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder")
     )
     (path "/1ad690a0-86ab-4bd1-bd9c-673cbcd9a07c"
-      (reference "R22") (unit 1) (value "10k") (footprint "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder")
+      (reference "R22") (unit 1) (value "2k2") (footprint "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder")
     )
     (path "/2a9084b9-0e9b-4b1a-8b73-32228c17c58c"
       (reference "R23") (unit 1) (value "470R") (footprint "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder")
     )
     (path "/121d6c89-6ff3-48fb-a255-6ef24a424e58"
-      (reference "R24") (unit 1) (value "10k") (footprint "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder")
+      (reference "R24") (unit 1) (value "2k2") (footprint "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder")
     )
     (path "/8d833850-893e-4165-9d69-3891a84665c3"
       (reference "R25") (unit 1) (value "470R") (footprint "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder")
