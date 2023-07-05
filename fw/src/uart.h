@@ -25,4 +25,13 @@ bool uart_can_fill_output_buf(void);
 uint8_t uart_send_buf(void);
 void uart_update_1ms(void);
 
+#define UART_MSG_MS_GET_SENS 0x01
+#define UART_MSG_MS_GET_POS 0x02
+#define UART_MSG_MS_FLAP 0x10
+#define UART_MSG_MS_SET_SINGLE 0x11
+#define UART_MSG_MS_SET_ALL 0x12
+
+#define UART_MSG_SM_SENS 0x01
+#define UART_MSG_SM_POS 0x02
+
 #endif

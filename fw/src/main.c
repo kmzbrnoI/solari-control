@@ -10,17 +10,29 @@
 #include "io.h"
 #include "uart.h"
 #include "spi.h"
+#include "flap.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
 int main();
 static inline void init(void);
 static void uart_process_received(void);
-static void _uart_send_test(void);
+static void _uart_process_txreq(void);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-volatile uint16_t _counter_1s;
+volatile bool _flap_update_rq;
+volatile uint16_t _counter_flap_clap;
+
+typedef union {
+	uint8_t all;
+	struct {
+		bool sens : 1;
+		bool pos : 1;
+	} sep;
+} UartRequests;
+
+UartRequests uart_req;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -30,11 +42,17 @@ int main() {
 	while (true) {
 		if (uart_received)
 			uart_process_received();
-
-		if (_counter_1s >= 1000) {
-			_counter_1s = 0;
-			_uart_send_test();
+		_uart_process_txreq();
+		if (_flap_update_rq) {
+			flap_update_1ms();
+			_flap_update_rq = false;
 		}
+		if (_counter_flap_clap >= FLAP_CLAP_PERIOD_MS) {
+			// flap_single_clap(); // TODO uncomment after tests
+			_counter_flap_clap = 0;
+			uart_req.sep.pos = true;
+		}
+
 		// wdt_reset();
 	}
 }
@@ -42,6 +60,8 @@ int main() {
 static inline void init(void) {
 	ACSR |= ACD;  // analog comparator disable
 	TIMSK0 = TIMSK1 = TIMSK2 = 0;
+	uart_req.all = 0;
+	_counter_flap_clap = 0;
 
 	io_init();
 	io_led_green_on();
@@ -50,6 +70,7 @@ static inline void init(void) {
 
 	uart_init();
 	spi_init();
+	flap_init();
 
 	// Setup timer 0 @ 1 kHz (period 1 ms)
 	TCCR0A = (1 << WGM01); // CTC mode
@@ -73,9 +94,10 @@ static inline void init(void) {
 ISR(TIMER0_COMPA_vect) {
 	// Timer 2 @ 1 kHz (1 ms)
 	uart_update_1ms();
+	_flap_update_rq = true;
 
-	if (_counter_1s < 1000)
-		_counter_1s++;
+	if (_counter_flap_clap < FLAP_CLAP_PERIOD_MS)
+		_counter_flap_clap++;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -83,17 +105,54 @@ ISR(TIMER0_COMPA_vect) {
 static void uart_process_received(void) {
 	if (!uart_received)
 		return;
-
 	io_led_green_toggle();
+	const uint8_t data_len = uart_input_buf[1];
+
+	switch (uart_input_buf[2]) { // message type
+	case UART_MSG_MS_GET_SENS:
+		uart_req.sep.sens = true;
+		break;
+	case UART_MSG_MS_GET_POS:
+		uart_req.sep.pos = true;
+		break;
+	case UART_MSG_MS_FLAP:
+		if (data_len >= FLAP_BYTES) {
+			flap_flap((uint8_t*)&uart_input_buf[3]);
+		}
+		break;
+	case UART_MSG_MS_SET_SINGLE:
+		if (data_len > 2) {
+			flap_set_single(uart_input_buf[3], uart_input_buf[4]);
+		}
+		break;
+	case UART_MSG_MS_SET_ALL:
+		if (data_len >= FLAP_UNITS) {
+			flap_set_all((uint8_t*)&uart_input_buf[3]);
+		}
+	}
+
 	uart_received = false;
 }
 
-static void _uart_send_test(void) {
+static void _uart_process_txreq(void) {
 	if (!uart_can_fill_output_buf())
 		return;
 
-	uart_output_buf[1] = 1;
-	uart_output_buf[2] = 0x42;
-	uart_output_buf[3] = 0x11;
-	uart_send_buf();
+	if (uart_req.sep.sens) {
+		uart_output_buf[1] = 2*FLAP_BYTES;
+		uart_output_buf[2] = UART_MSG_SM_SENS;
+		for (uint8_t i = 0; i < FLAP_BYTES; i++)
+			uart_output_buf[3+i] = flap_sens_moved[i];
+		for (uint8_t i = 0; i < FLAP_BYTES; i++)
+			uart_output_buf[3+FLAP_BYTES+i] = flap_sens_reset[i];
+		if (uart_send_buf() == 0)
+			uart_req.sep.sens = false;
+	} else if (uart_req.sep.pos) {
+		uart_output_buf[1] = FLAP_UNITS;
+		uart_output_buf[2] = UART_MSG_SM_POS;
+		for (uint8_t i = 0; i < FLAP_UNITS; i++)
+			uart_output_buf[3+i] = flap_pos[i];
+		if (uart_send_buf() == 0)
+			uart_req.sep.pos = false;
+	}
 }
