@@ -23,6 +23,9 @@ static void _uart_process_txreq(void);
 
 volatile bool _flap_update_rq;
 volatile uint16_t _counter_flap_clap;
+volatile uint8_t _led_yel_counter;
+
+#define LED_YEL_ON_MS 100
 
 typedef union {
 	uint8_t all;
@@ -48,9 +51,11 @@ int main() {
 			_flap_update_rq = false;
 		}
 		if (_counter_flap_clap >= FLAP_CLAP_PERIOD_MS) {
-			// flap_single_clap(); // TODO uncomment after tests
+			//flap_single_clap(); // TODO uncomment after tests
 			_counter_flap_clap = 0;
+			uart_req.sep.sens = true;
 			uart_req.sep.pos = true;
+			io_led_green_toggle();
 		}
 
 		// wdt_reset();
@@ -62,6 +67,7 @@ static inline void init(void) {
 	TIMSK0 = TIMSK1 = TIMSK2 = 0;
 	uart_req.all = 0;
 	_counter_flap_clap = 0;
+	_led_yel_counter = 2*LED_YEL_ON_MS;
 
 	io_init();
 	io_led_green_on();
@@ -99,6 +105,11 @@ ISR(TIMER0_COMPA_vect) {
 
 	if (_counter_flap_clap < FLAP_CLAP_PERIOD_MS)
 		_counter_flap_clap++;
+	if (_led_yel_counter < 2*LED_YEL_ON_MS) {
+		_led_yel_counter++;
+		if (_led_yel_counter == LED_YEL_ON_MS)
+			io_led_yellow_off();
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -106,7 +117,10 @@ ISR(TIMER0_COMPA_vect) {
 static void uart_process_received(void) {
 	if (!uart_received)
 		return;
-	io_led_green_toggle();
+	if (_led_yel_counter == 2*LED_YEL_ON_MS) {
+		_led_yel_counter = 0;
+		io_led_yellow_on();
+	}
 	const uint8_t data_len = uart_input_buf[1];
 
 	switch (uart_input_buf[2]) { // message type
