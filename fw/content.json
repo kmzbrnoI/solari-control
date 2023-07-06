@@ -1,9 +1,9 @@
 {
-    "num": 12345,
-    "type": "Os",
-    "direction1": "Blansko",
-    "direction2": "Blansko",
-    "final": "4ab",
-    "time": "14:30",
-    "delay": "0:30"
+    "_num": 12345,
+    "_type": "Os",
+    "_direction1": "Blansko",
+    "_direction2": "Blansko",
+    "final": "plantážník",
+    "_time": "14:30",
+    "_delay": "0:30"
 }

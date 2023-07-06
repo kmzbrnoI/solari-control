@@ -39,8 +39,9 @@ RECEIVE_TIMEOUT = datetime.timedelta(milliseconds=200)
 FLAP_UNITS = 32
 FLAP_ALPHABET = "~0123456789aáäbcčdďeéěfghiíjklmnňoóöpqrřsštťuúůüvwxyýzž/.()"
 FLAP_FINAL_LEN = 14
-FLAP_NUMBERS = "~0123456789"
-FLAP_NUMBERS_COUNT = 5
+FLAP_TRAINNUM_COUNT = 5
+FLAP_TYPES = ["Ex", "ExR", "Os"]
+FLAP_DIRECTIONS = ["Blansko"]
 
 global sport
 global send_positions
@@ -77,16 +78,18 @@ def parse(data: List[int]) -> None:
         print(f'Positions: {data[3:-1]}')
         positions = data[3:-1]
         assert len(positions) == FLAP_UNITS
-        if all([pos != 255 for pos in positions]):
+        if all([pos != 0 for pos in positions]):
             send_positions = True
 
     elif data[2] == UART_MSG_SM_SENS:
         print(f'Sensors: {data[3]:#010b} {data[4]:#010b} {data[5]:#010b} {data[6]:#010b}')
 
 
-def flap_number(num: int) -> List[int]:  # always returns list of length FLAP_NUMBERS_COUNT
-    numstr = str(num).rjust(FLAP_NUMBERS_COUNT, '~')[-FLAP_NUMBERS_COUNT:]
-    return [FLAP_NUMBERS.index(char) for char in numstr]
+def flap_number(num: int, length: int) -> List[int]:  # always returns list of length `length`
+    if num == 0:
+        return [0]*length
+    numstr = str(num).rjust(length, '~')[-length:]
+    return [int(char)+1 if char != '~' else 0 for char in numstr]
 
 
 def flap_final(final: str) -> List[int]:  # always returns list of length FLAP_FINAL_LEN
@@ -94,9 +97,23 @@ def flap_final(final: str) -> List[int]:  # always returns list of length FLAP_F
 
 
 def flap_all_positions(content: Dict) -> List[int]:  # always returns list of length FLAP_UNITS
-    result = [0]*FLAP_UNITS
-    for i, pos in enumerate(flap_final(content["final"])):
-        result[i] = pos
+    result = flap_final(content.get('final', ''))
+    result += flap_number(content.get('num', 0), FLAP_TRAINNUM_COUNT)
+
+    if 'time' in content:
+        hours, minutes = content['time'].split(':')
+        result += [int(hours)+1] + flap_number(minutes, 2)
+    else:
+        result += [0, 0, 0]
+
+    result += [FLAP_TYPES.index(content['type'])+1] if 'type' in content else [0]
+    result += [FLAP_DIRECTIONS.index(content['direction1'])+1] if 'direction1' in content else [0]
+    result += [FLAP_DIRECTIONS.index(content['direction2'])+1] if 'direction2' in content else [0]
+
+    # TODO: delay
+
+    while len(result) < FLAP_UNITS:
+        result.append(0)
     return result
 
 
