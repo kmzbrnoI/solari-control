@@ -82,7 +82,8 @@ def parse(data: List[int]) -> None:
             send_positions = True
 
     elif data[2] == UART_MSG_SM_SENS:
-        print(f'Sensors: {data[3]:#010b} {data[4]:#010b} {data[5]:#010b} {data[6]:#010b}')
+        print('Sensors: ', end='')
+        print(' '.join([f'{byte:#010b}' for byte in data[3:-1]]))
 
 
 def flap_number(num: int, length: int) -> List[int]:  # always returns list of length `length`
