@@ -70,6 +70,10 @@ void flap_update_1ms(void) {
 }
 
 static void _flap_read(void) {
+	/* There must be a delay of minimum 50 us between 2 successive execution of this function
+	 * to ensure proper state of 'Z' & 'P' signals.
+	 */
+	// TODO: check if time for transistors in flap units is enough
 	io_z_on();
 	io_p_off();
 	_delay_us(10);
@@ -77,7 +81,7 @@ static void _flap_read(void) {
 
 	io_z_off();
 	io_p_on();
-	_delay_us(10);
+	_delay_us(50); // wait for slow transistors & optocoupler
 	spi_read(flap_sens_moved, FLAP_BYTES);
 
 	io_z_off();

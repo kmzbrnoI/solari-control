@@ -26,10 +26,10 @@ inline void io_rel1_off() { PORTD &= ~(1 << PD6); }
 inline void io_rel2_on() { PORTD |= (1 << PD7); }
 inline void io_rel2_off() { PORTD &= ~(1 << PD7); }
 
-inline void io_z_on() { PORTD |= (1 << PD3); }
-inline void io_z_off() { PORTD &= ~(1 << PD3); }
-inline void io_p_on() { PORTD |= (1 << PD4); }
-inline void io_p_off() { PORTD &= ~(1 << PD4); }
+inline void io_z_on() { PORTD |= (1 << PD4); }
+inline void io_z_off() { PORTD &= ~(1 << PD4); }
+inline void io_p_on() { PORTD |= (1 << PD3); }
+inline void io_p_off() { PORTD &= ~(1 << PD3); }
 inline void io_parser_on() { PORTD |= (1 << PD2); }
 inline void io_parser_off() { PORTD &= ~(1 << PD2); }
 inline void io_strobe_on() { PORTD |= (1 << PD5); }
