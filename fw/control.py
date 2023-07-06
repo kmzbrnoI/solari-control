@@ -20,7 +20,6 @@ import serial
 import sys
 import datetime
 from typing import List, Dict
-import datetime
 import json
 
 UART_RECEIVE_MAGIC = 0xB7
@@ -38,7 +37,7 @@ UART_MSG_SM_POS = 0x02
 RECEIVE_TIMEOUT = datetime.timedelta(milliseconds=200)
 
 FLAP_UNITS = 32
-FLAP_ALPHABET = "~0123456789abc"
+FLAP_ALPHABET = "~0123456789aáäbcčdďeéěfghiíjklmnňoóöpqrřsštťuúůüvwxyýzž/.()"
 FLAP_FINAL_LEN = 14
 FLAP_NUMBERS = "~0123456789"
 FLAP_NUMBERS_COUNT = 5
@@ -85,16 +84,16 @@ def parse(data: List[int]) -> None:
         print(f'Sensors: {data[3]:#010b} {data[4]:#010b} {data[5]:#010b} {data[6]:#010b}')
 
 
-def flap_number(num: int) -> List[int]: # always returns list of length FLAP_NUMBERS_COUNT
+def flap_number(num: int) -> List[int]:  # always returns list of length FLAP_NUMBERS_COUNT
     numstr = str(num).rjust(FLAP_NUMBERS_COUNT, '~')[-FLAP_NUMBERS_COUNT:]
     return [FLAP_NUMBERS.index(char) for char in numstr]
 
 
-def flap_final(final: str) -> List[int]: # always returns list of length FLAP_FINAL_LEN
+def flap_final(final: str) -> List[int]:  # always returns list of length FLAP_FINAL_LEN
     return [FLAP_ALPHABET.index(char) for char in final.lower().ljust(FLAP_FINAL_LEN, '~')]
 
 
-def flap_all_positions(content: Dict) -> List[int]: # always returns list of length FLAP_UNITS
+def flap_all_positions(content: Dict) -> List[int]:  # always returns list of length FLAP_UNITS
     result = [0]*FLAP_UNITS
     for i, pos in enumerate(flap_final(content["final"])):
         result[i] = pos
