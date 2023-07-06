@@ -58,8 +58,8 @@ def send(msgtype: int, data: List[int]) -> None:
     _data = data[:]
     _data.insert(0, msgtype)
     _data.insert(0, len(data))
-    _data.insert(0, UART_RECEIVE_MAGIC)
-    _data.append(xor(data))
+    _data.insert(0, UART_SEND_MAGIC)
+    _data.append(xor(_data))
 
     print(f'Send: {_data}')
     sport.write(_data)
@@ -78,7 +78,7 @@ def parse(data: List[int]) -> None:
         print(f'Positions: {data[3:-1]}')
         positions = data[3:-1]
         assert len(positions) == FLAP_UNITS
-        if all([pos == 0 for pos in positions]):
+        if all([pos != 255 for pos in positions]):
             send_positions = True
 
     elif data[2] == UART_MSG_SM_SENS:
