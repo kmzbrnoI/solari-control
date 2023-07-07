@@ -13,7 +13,7 @@ uint8_t flap_sens_reset[FLAP_BYTES];
 uint8_t flap_sens_moved[FLAP_BYTES];
 uint8_t flap_pos[FLAP_UNITS];
 
-uint8_t _last_moved[FLAP_BYTES];
+uint8_t _last_moved_sens[FLAP_BYTES];
 bool _next_ip;
 uint8_t _active_out_timer;
 uint8_t _target_pos[FLAP_UNITS];
@@ -33,7 +33,7 @@ void flap_init(void) {
 	memset(flap_pos, 0xFF, FLAP_UNITS);
 	memset(_target_pos, 0, FLAP_UNITS);
 	_flap_read();
-	memcpy(_last_moved, flap_pos, FLAP_BYTES);
+	_update_moved();
 }
 
 void flap_flap(uint8_t which[FLAP_BYTES]) {
@@ -76,19 +76,23 @@ static void _flap_read(void) {
 	 */
 	uint8_t received[FLAP_BYTES];
 
-	io_z_on();
-	io_p_off();
-	_delay_us(10);
-	spi_read(flap_sens_moved, FLAP_BYTES);
-
 	io_z_off();
 	io_p_on();
+	_delay_us(10);
+	spi_read(received, FLAP_BYTES);
+
+	// invert received bytes
+	for (size_t i = 0; i < FLAP_BYTES; i++)
+		flap_sens_moved[FLAP_BYTES-i-1] = reverse_uint8_bits_order(received[i]);
+
+	io_z_on();
+	io_p_off();
 	_delay_us(50); // wait for slow transistors & optocoupler
 	spi_read(received, FLAP_BYTES);
 
 	// invert received bytes
 	for (size_t i = 0; i < FLAP_BYTES; i++)
-		flap_sens_reset[FLAP_BYTES-i-1] = reverse_uint8_bits_order(received[i]);
+		flap_sens_reset[FLAP_BYTES-i-1] = reverse_uint8_bits_order(~received[i]);
 
 	io_z_off();
 	io_p_off();
@@ -99,13 +103,15 @@ static void _update_moved(void) {
 		// TODO: check if order is ok
 		const bool current_sens = ((flap_sens_moved[i/8] >> (i%8)) & 1);
 		const bool current_reset = ((flap_sens_reset[i/8] >> (i%8)) & 1);
-		const bool last_sens = ((_last_moved[i/8] >> (i%8)) & 1);
+		const bool last_sens = ((_last_moved_sens[i/8] >> (i%8)) & 1);
 
 		if ((current_sens != last_sens) && (flap_pos[i] != 0xFF))
 			flap_pos[i]++;
 		if (current_reset)
 			flap_pos[i] = 0;
 	}
+
+	memcpy(_last_moved_sens, flap_sens_moved, FLAP_BYTES);
 }
 
 static inline bool _flap_in_progress(void) {
@@ -131,7 +137,8 @@ void flap_single_clap() {
 	memset(to_flap, 0, FLAP_BYTES);
 
 	for (uint8_t i = 0; i < FLAP_UNITS; i++)
-		to_flap[i/8] |= ((flap_pos[i] != _target_pos[i]) & 1) << (i%8);
+		if (flap_pos[i] != _target_pos[i])
+			to_flap[i/8] |= (1 << (i%8));
 
 	flap_flap(to_flap);
 }
