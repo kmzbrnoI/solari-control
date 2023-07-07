@@ -77,7 +77,7 @@ static inline void init(void) {
 	uart_init();
 	spi_init();
 	flap_init();
-	io_rel1_on();
+	io_rel2_on();
 
 	// Setup timer 0 @ 1 kHz (period 1 ms)
 	TCCR0A = (1 << WGM01); // CTC mode

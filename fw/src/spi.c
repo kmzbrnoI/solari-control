@@ -38,7 +38,7 @@ void spi_read(uint8_t* data, uint8_t size) {
 	for (uint8_t i = 0; i < size; i++) {
 		SPDR = 0;
 		while (!(SPSR & (1<<SPIF)));
-		data[i] = SPDR;
+		data[i] = ~SPDR;
 	}
 
 	io_parser_off();

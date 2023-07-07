@@ -4,6 +4,7 @@
 #include "flap.h"
 #include "spi.h"
 #include "io.h"
+#include "common.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // Variables
@@ -73,16 +74,21 @@ static void _flap_read(void) {
 	/* There must be a delay of minimum 50 us between 2 successive execution of this function
 	 * to ensure proper state of 'Z' & 'P' signals.
 	 */
-	// TODO: check if time for transistors in flap units is enough
+	uint8_t received[FLAP_BYTES];
+
 	io_z_on();
 	io_p_off();
 	_delay_us(10);
-	spi_read(flap_sens_reset, FLAP_BYTES);
+	spi_read(flap_sens_moved, FLAP_BYTES);
 
 	io_z_off();
 	io_p_on();
 	_delay_us(50); // wait for slow transistors & optocoupler
-	spi_read(flap_sens_moved, FLAP_BYTES);
+	spi_read(received, FLAP_BYTES);
+
+	// invert received bytes
+	for (size_t i = 0; i < FLAP_BYTES; i++)
+		flap_sens_reset[FLAP_BYTES-i-1] = reverse_uint8_bits_order(received[i]);
 
 	io_z_off();
 	io_p_off();
