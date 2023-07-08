@@ -2,7 +2,7 @@
 
 """
 Usage:
-    control.py <device> <content.json>
+    control.py <device> [<content.json>]
 
 Content of content.json:
 {
@@ -45,7 +45,7 @@ FLAP_TRAINNUM_COUNT = 5
 
 FLAP_TYPES = [
     'Ec', 'Ic', 'Ex R', 'Ex lůžkový', 'Ex', 'R R', 'R lůžkový', 'R', 'Sp', 'Os',
-    'Mim. Ex', 'Mim. R', 'Mim. Sp', 'Mim. Os', 'Zvláštní vlak', 'Special train'
+    'Mim. Ex', 'Mim. R', 'Mim. Sp', 'Mim. Os', 'Zvláštní vlak', 'Special train',
     'Parní vlak', 'Steam train', 'IR', 'ICE', 'Sc', 'TGV', '', 'Ic bílá', 'Sp',
 ]
 
@@ -176,12 +176,16 @@ if __name__ == '__main__':
     send_positions = False
     positions_sent = False
 
-    if len(sys.argv) != 3:
+    if len(sys.argv) < 2:
         sys.stderr.write(__doc__.strip()+'\n')
         sys.exit(1)
 
-    with open(sys.argv[2]) as f:
-        positions = json.loads(f.read())
+    if len(sys.argv) >= 3:
+        with open(sys.argv[2]) as f:
+            positions = json.loads(f.read())
+    else:
+        positions = {}
+
     sport = serial.Serial(sys.argv[1], 115200)
 
     receive_buf = []
