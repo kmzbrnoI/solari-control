@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define FLAP_BYTES 4
+#define FLAP_BYTES 3
 #define FLAP_UNITS (8*FLAP_BYTES)
 #define ACTIVE_OUT_MS 80 // max uint8_t
 #define FLAP_CLAP_PERIOD_MS 200
