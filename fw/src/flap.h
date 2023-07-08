@@ -8,8 +8,8 @@
 
 #define FLAP_BYTES 4
 #define FLAP_UNITS (8*FLAP_BYTES)
-#define ACTIVE_OUT_MS 50 // max uint8_t
-#define FLAP_CLAP_PERIOD_MS 500
+#define ACTIVE_OUT_MS 80 // max uint8_t
+#define FLAP_CLAP_PERIOD_MS 200
 
 extern uint8_t flap_sens_reset[FLAP_BYTES];
 extern uint8_t flap_sens_moved[FLAP_BYTES];
