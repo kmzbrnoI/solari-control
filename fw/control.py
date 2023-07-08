@@ -84,6 +84,7 @@ FLAP_DIRECTIONS_2 = [
 
 global sport
 global send_positions
+global received_positions
 
 
 def xor(data: List[int]) -> int:
@@ -106,6 +107,7 @@ def send(msgtype: int, data: List[int]) -> None:
 
 def parse(data: List[int]) -> None:
     global send_positions
+    global received_positions
 
     if xor(data) != 0:
         print(f'Invalid xor: {data}')
@@ -116,8 +118,9 @@ def parse(data: List[int]) -> None:
     if data[2] == UART_MSG_SM_POS:
         print(f'Positions: {data[3:-1]}')
         positions = data[3:-1]
+        received_positions = positions
         assert len(positions) == FLAP_UNITS
-        if all([pos != 0xFF for pos in positions[8:]]):
+        if all([pos != 0xFF for pos in positions]):
             send_positions = True
 
     elif data[2] == UART_MSG_SM_TARGET:
@@ -173,8 +176,10 @@ def flap_all_positions(content: Dict) -> List[int]:  # always returns list of le
 
 if __name__ == '__main__':
     global send_positions
+    global received_positions
     send_positions = False
     positions_sent = False
+    received_positions = [0xFF] * FLAP_UNITS
 
     if len(sys.argv) < 2:
         sys.stderr.write(__doc__.strip()+'\n')
@@ -217,3 +222,7 @@ if __name__ == '__main__':
             send_positions = False
             positions_sent = True
             send(UART_MSG_MS_SET_ALL, flap_all_positions(positions))
+
+        if positions == received_positions:
+            print('Finished')
+            sys.exit(0)
