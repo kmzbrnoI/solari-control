@@ -137,7 +137,7 @@ static void uart_process_received(void) {
 		}
 		break;
 	case UART_MSG_MS_SET_SINGLE:
-		if (data_len > 2) {
+		if (data_len >= 2) {
 			flap_set_single(uart_input_buf[3], uart_input_buf[4]);
 		}
 		break;
@@ -145,6 +145,7 @@ static void uart_process_received(void) {
 		if (data_len >= FLAP_UNITS) {
 			flap_set_all((uint8_t*)&uart_input_buf[3]);
 		}
+		break;
 	}
 
 	uart_received = false;
