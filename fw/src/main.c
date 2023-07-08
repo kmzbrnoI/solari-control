@@ -24,6 +24,7 @@ static void _uart_process_txreq(void);
 volatile bool _flap_update_rq;
 volatile uint16_t _counter_flap_clap;
 volatile uint8_t _led_yel_counter;
+volatile bool _flap_txreq;
 
 #define LED_YEL_ON_MS 100
 
@@ -46,24 +47,33 @@ int main() {
 	while (true) {
 		if (uart_received)
 			uart_process_received();
+
 		_uart_process_txreq();
+
 		if (_flap_update_rq) {
 			flap_update_1ms();
 			_flap_update_rq = false;
 		}
+
 		if (_counter_flap_clap >= FLAP_CLAP_PERIOD_MS) {
 			flap_single_clap();
 			_counter_flap_clap = 0;
-			uart_req.sep.sens = true;
-			uart_req.sep.pos = true;
 			io_led_green_toggle();
+			if (_flap_txreq) {
+				uart_req.sep.sens = true;
+				uart_req.sep.pos = true;
+			}
+			_flap_txreq = true;
 		}
-		/*if (flap_moved_changed) {
-			uart_req.sep.sens = true;
-			uart_req.sep.pos = true;
-			uart_req.sep.target = true;
+
+		if (flap_moved_changed) {
 			flap_moved_changed = false;
-		}*/
+			if (_flap_txreq) {
+				uart_req.sep.sens = true;
+				uart_req.sep.pos = true;
+				_flap_txreq = false;
+			}
+		}
 
 		// wdt_reset();
 	}
@@ -75,6 +85,7 @@ static inline void init(void) {
 	uart_req.all = 0;
 	_counter_flap_clap = 0;
 	_led_yel_counter = 2*LED_YEL_ON_MS;
+	_flap_txreq = false;
 
 	io_init();
 	io_led_green_on();
