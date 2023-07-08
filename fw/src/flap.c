@@ -58,6 +58,7 @@ void flap_flap(uint8_t which[FLAP_BYTES]) {
 
 	_active_out_timer = 0;
 	_next_ip = !_next_ip;
+	io_led_red_on();
 }
 
 void flap_update_1ms(void) {
@@ -69,6 +70,7 @@ void flap_update_1ms(void) {
 			_flap_read();
 			_update_moved();
 			flap_moved_changed = true;
+			io_led_red_off();
 		}
 	}
 }
