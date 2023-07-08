@@ -7010,7 +7010,7 @@
     (property "Reference" "R7" (id 0) (at 74.93 71.755 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
-    (property "Value" "2k2" (id 1) (at 74.93 69.85 0)
+    (property "Value" "470R" (id 1) (at 74.93 69.85 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" (id 2) (at 75.057 70.485 90)
@@ -8203,7 +8203,7 @@
       (reference "R6") (unit 1) (value "100R") (footprint "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder")
     )
     (path "/98793b64-96d2-400b-bad0-f545bed1c709"
-      (reference "R7") (unit 1) (value "2k2") (footprint "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder")
+      (reference "R7") (unit 1) (value "470R") (footprint "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder")
     )
     (path "/3ff5e6c2-6c9d-485f-83ad-f18567e6d753"
       (reference "R8") (unit 1) (value "100R") (footprint "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder")
