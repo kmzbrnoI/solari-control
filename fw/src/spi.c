@@ -16,7 +16,7 @@
 void spi_init(void) {
 	DDRB |= (1 << PB3) | (1 << PB5) | (1 << PB2); // MOSI & SCK & SS out
 	PORTB |= (1 << PB4); // pull-up on MISO just for sure
-	SPCR = (1 << SPE) | (1 << MSTR) | (1 << SPR0); // enable SPI, SPI master, frequency=f_osc/16
+	SPCR = (1 << SPE) | (1 << MSTR) | (1 << SPR1); // enable SPI, SPI master, frequency=f_osc/64
 }
 
 void spi_write(uint8_t* data, uint8_t size) {

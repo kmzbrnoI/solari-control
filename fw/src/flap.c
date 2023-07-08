@@ -68,6 +68,7 @@ void flap_update_1ms(void) {
 			io_ip_off();
 			_flap_read();
 			_update_moved();
+			flap_moved_changed = true;
 		}
 	}
 }
@@ -129,10 +130,8 @@ void flap_set_single(uint8_t i, uint8_t pos) {
 }
 
 void flap_single_clap() {
-	if (strncmp((char*)flap_pos, (char*)flap_target_pos, FLAP_UNITS) == 0) {
-		io_led_red_toggle();
+	if (memcmp((char*)flap_pos, (char*)flap_target_pos, FLAP_UNITS) == 0)
 		return;
-	}
 	if (_flap_in_progress())
 		return;
 

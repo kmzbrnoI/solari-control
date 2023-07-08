@@ -42,9 +42,6 @@ UartRequests uart_req;
 
 int main() {
 	init();
-	uart_req.sep.sens = true;
-	uart_req.sep.pos = true;
-	uart_req.sep.target = true;
 
 	while (true) {
 		if (uart_received)
@@ -57,16 +54,16 @@ int main() {
 		if (_counter_flap_clap >= FLAP_CLAP_PERIOD_MS) {
 			flap_single_clap();
 			_counter_flap_clap = 0;
-			//uart_req.sep.sens = true;
-			//uart_req.sep.pos = true;
+			uart_req.sep.sens = true;
+			uart_req.sep.pos = true;
 			io_led_green_toggle();
 		}
-		if (flap_moved_changed) {
+		/*if (flap_moved_changed) {
 			uart_req.sep.sens = true;
 			uart_req.sep.pos = true;
 			uart_req.sep.target = true;
 			flap_moved_changed = false;
-		}
+		}*/
 
 		// wdt_reset();
 	}
@@ -152,11 +149,13 @@ static void uart_process_received(void) {
 	case UART_MSG_MS_SET_SINGLE:
 		if (data_len >= 2) {
 			flap_set_single(uart_input_buf[3], uart_input_buf[4]);
+			uart_req.sep.target = true;
 		}
 		break;
 	case UART_MSG_MS_SET_ALL:
 		if (data_len >= FLAP_UNITS) {
 			flap_set_all((uint8_t*)&uart_input_buf[3]);
+			uart_req.sep.target = true;
 		}
 		break;
 	}
