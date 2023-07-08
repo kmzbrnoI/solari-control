@@ -27,12 +27,14 @@ UART_SEND_MAGIC = 0xCA
 
 UART_MSG_MS_GET_SENS = 0x01
 UART_MSG_MS_GET_POS = 0x02
+UART_MSG_MS_GET_TARGET = 0x03
 UART_MSG_MS_FLAP = 0x10
 UART_MSG_MS_SET_SINGLE = 0x11
 UART_MSG_MS_SET_ALL = 0x12
 
 UART_MSG_SM_SENS = 0x01
 UART_MSG_SM_POS = 0x02
+UART_MSG_SM_TARGET = 0x03
 
 RECEIVE_TIMEOUT = datetime.timedelta(milliseconds=200)
 
@@ -78,8 +80,11 @@ def parse(data: List[int]) -> None:
         print(f'Positions: {data[3:-1]}')
         positions = data[3:-1]
         assert len(positions) == FLAP_UNITS
-        if all([pos != 0 for pos in positions]):
+        if all([pos == 0 for pos in positions[8:]]):
             send_positions = True
+
+    elif data[2] == UART_MSG_SM_TARGET:
+        print(f'Target: {data[3:-1]}')
 
     elif data[2] == UART_MSG_SM_SENS:
         print('Sensors: ', end='')

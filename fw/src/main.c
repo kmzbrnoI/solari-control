@@ -32,6 +32,7 @@ typedef union {
 	struct {
 		bool sens : 1;
 		bool pos : 1;
+		bool target : 1;
 	} sep;
 } UartRequests;
 
@@ -41,6 +42,9 @@ UartRequests uart_req;
 
 int main() {
 	init();
+	uart_req.sep.sens = true;
+	uart_req.sep.pos = true;
+	uart_req.sep.target = true;
 
 	while (true) {
 		if (uart_received)
@@ -51,11 +55,17 @@ int main() {
 			_flap_update_rq = false;
 		}
 		if (_counter_flap_clap >= FLAP_CLAP_PERIOD_MS) {
-			//flap_single_clap(); // TODO uncomment after tests
+			flap_single_clap();
 			_counter_flap_clap = 0;
+			//uart_req.sep.sens = true;
+			//uart_req.sep.pos = true;
+			io_led_green_toggle();
+		}
+		if (flap_moved_changed) {
 			uart_req.sep.sens = true;
 			uart_req.sep.pos = true;
-			io_led_green_toggle();
+			uart_req.sep.target = true;
+			flap_moved_changed = false;
 		}
 
 		// wdt_reset();
@@ -131,6 +141,9 @@ static void uart_process_received(void) {
 	case UART_MSG_MS_GET_POS:
 		uart_req.sep.pos = true;
 		break;
+	case UART_MSG_MS_GET_TARGET:
+		uart_req.sep.target = true;
+		break;
 	case UART_MSG_MS_FLAP:
 		if (data_len >= FLAP_BYTES) {
 			flap_flap((uint8_t*)&uart_input_buf[3]);
@@ -171,5 +184,12 @@ static void _uart_process_txreq(void) {
 			uart_output_buf[3+i] = flap_pos[i];
 		if (uart_send_buf() == 0)
 			uart_req.sep.pos = false;
+	} else if (uart_req.sep.target) {
+		uart_output_buf[1] = FLAP_UNITS;
+		uart_output_buf[2] = UART_MSG_SM_TARGET;
+		for (uint8_t i = 0; i < FLAP_UNITS; i++)
+			uart_output_buf[3+i] = flap_target_pos[i];
+		if (uart_send_buf() == 0)
+			uart_req.sep.target = false;
 	}
 }

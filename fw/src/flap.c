@@ -16,7 +16,8 @@ uint8_t flap_pos[FLAP_UNITS];
 uint8_t _last_moved_sens[FLAP_BYTES];
 bool _next_ip;
 uint8_t _active_out_timer;
-uint8_t _target_pos[FLAP_UNITS];
+bool flap_moved_changed;
+uint8_t flap_target_pos[FLAP_UNITS];
 
 ///////////////////////////////////////////////////////////////////////////////
 // Local functions prototypes
@@ -30,8 +31,9 @@ static inline bool _flap_in_progress(void);
 void flap_init(void) {
 	_next_ip = true;
 	_active_out_timer = ACTIVE_OUT_MS;
+	flap_moved_changed = false;
 	memset(flap_pos, 0xFF, FLAP_UNITS);
-	memset(_target_pos, 0, FLAP_UNITS);
+	memset(flap_target_pos, 0, FLAP_UNITS);
 	_flap_read();
 	_update_moved();
 }
@@ -100,7 +102,6 @@ static void _flap_read(void) {
 
 static void _update_moved(void) {
 	for (uint8_t i = 0; i < FLAP_UNITS; i++) {
-		// TODO: check if order is ok
 		const bool current_sens = ((flap_sens_moved[i/8] >> (i%8)) & 1);
 		const bool current_reset = ((flap_sens_reset[i/8] >> (i%8)) & 1);
 		const bool last_sens = ((_last_moved_sens[i/8] >> (i%8)) & 1);
@@ -119,17 +120,19 @@ static inline bool _flap_in_progress(void) {
 }
 
 void flap_set_all(uint8_t pos[FLAP_UNITS]) {
-	memcpy(_target_pos, pos, FLAP_UNITS);
+	memcpy(flap_target_pos, pos, FLAP_UNITS);
 }
 
 void flap_set_single(uint8_t i, uint8_t pos) {
 	if (i < FLAP_UNITS)
-		_target_pos[i] = pos;
+		flap_target_pos[i] = pos;
 }
 
 void flap_single_clap() {
-	if (strncmp((char*)flap_pos, (char*)_target_pos, FLAP_UNITS) == 0)
+	if (strncmp((char*)flap_pos, (char*)flap_target_pos, FLAP_UNITS) == 0) {
+		io_led_red_toggle();
 		return;
+	}
 	if (_flap_in_progress())
 		return;
 
@@ -137,7 +140,7 @@ void flap_single_clap() {
 	memset(to_flap, 0, FLAP_BYTES);
 
 	for (uint8_t i = 0; i < FLAP_UNITS; i++)
-		if (flap_pos[i] != _target_pos[i])
+		if (flap_pos[i] != flap_target_pos[i])
 			to_flap[i/8] |= (1 << (i%8));
 
 	flap_flap(to_flap);
