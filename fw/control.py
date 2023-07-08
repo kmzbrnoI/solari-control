@@ -39,7 +39,7 @@ UART_MSG_SM_TARGET = 0x03
 RECEIVE_TIMEOUT = datetime.timedelta(milliseconds=200)
 
 FLAP_UNITS = 24
-FLAP_ALPHABET = "~0123456789aáäbcčdďeéěfghiíjklmnňoóöpqrřsštťuúůüvwxyýzž/.()"
+FLAP_ALPHABET = " 0123456789aáäbcčdďeéěfghiíjklmnňoóöpqrřsštťuúůüvwxyýzž/.()"
 FLAP_FINAL_LEN = 14
 FLAP_TRAINNUM_COUNT = 5
 FLAP_TYPES = ["Ex", "ExR", "Os"]
@@ -80,7 +80,7 @@ def parse(data: List[int]) -> None:
         print(f'Positions: {data[3:-1]}')
         positions = data[3:-1]
         assert len(positions) == FLAP_UNITS
-        if all([pos == 0 for pos in positions[8:]]):
+        if all([pos != 0xFF for pos in positions[8:]]):
             send_positions = True
 
     elif data[2] == UART_MSG_SM_TARGET:
@@ -99,22 +99,33 @@ def flap_number(num: int, length: int) -> List[int]:  # always returns list of l
 
 
 def flap_final(final: str) -> List[int]:  # always returns list of length FLAP_FINAL_LEN
-    return [FLAP_ALPHABET.index(char) for char in final.lower().ljust(FLAP_FINAL_LEN, '~')]
+    return [FLAP_ALPHABET.index(char) for char in final.lower().ljust(FLAP_FINAL_LEN, ' ')]
 
 
 def flap_all_positions(content: Dict) -> List[int]:  # always returns list of length FLAP_UNITS
-    result = flap_final(content.get('final', ''))
-    result += flap_number(content.get('num', 0), FLAP_TRAINNUM_COUNT)
+    final = flap_final(content.get('final', ''))
+    assert len(final) == FLAP_FINAL_LEN
 
+    result = []
+    result += [FLAP_TYPES.index(content['type'])+1] if 'type' in content else [0]
+    result += flap_number(content.get('num', 0), FLAP_TRAINNUM_COUNT)
+    assert len(result) == 6
+    result += final[0:2]
+    assert len(result) == 8
+    result += final[10:14]
+    assert len(result) == 12
+    result += [FLAP_DIRECTIONS.index(content['direction1'])+1] if 'direction1' in content else [0]
+    result += [FLAP_DIRECTIONS.index(content['direction2'])+1] if 'direction2' in content else [0]
+    result += [0, 0] # time TODO
+    result += final[2:11]  # 0x10-0x17
+
+    """
     if 'time' in content:
         hours, minutes = content['time'].split(':')
         result += [int(hours)+1] + flap_number(minutes, 2)
     else:
         result += [0, 0, 0]
-
-    result += [FLAP_TYPES.index(content['type'])+1] if 'type' in content else [0]
-    result += [FLAP_DIRECTIONS.index(content['direction1'])+1] if 'direction1' in content else [0]
-    result += [FLAP_DIRECTIONS.index(content['direction2'])+1] if 'direction2' in content else [0]
+    """
 
     # TODO: delay
 
