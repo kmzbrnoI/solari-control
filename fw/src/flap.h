@@ -24,6 +24,7 @@ extern uint8_t flap_sens_moved[FLAP_BYTES];
 extern uint8_t flap_pos[FLAP_UNITS]; // 0xFF = unknown
 extern bool flap_moved_changed;
 extern uint8_t flap_target_pos[FLAP_UNITS];
+extern uint8_t flap_counts[FLAP_UNITS]; // initially 0xFF, set after first overflow
 
 void flap_init(void);
 void flap_set_all(uint8_t pos[FLAP_UNITS]);

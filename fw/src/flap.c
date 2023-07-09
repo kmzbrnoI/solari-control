@@ -12,6 +12,7 @@
 uint8_t flap_sens_reset[FLAP_BYTES];
 uint8_t flap_sens_moved[FLAP_BYTES];
 uint8_t flap_pos[FLAP_UNITS];
+uint8_t flap_counts[FLAP_UNITS];
 
 uint8_t _last_moved_sens[FLAP_BYTES];
 bool _next_ip;
@@ -33,6 +34,7 @@ void flap_init(void) {
 	_active_out_timer = ACTIVE_OUT_MS;
 	flap_moved_changed = false;
 	memset(flap_pos, 0xFF, FLAP_UNITS);
+	memset(flap_counts, 0xFF, FLAP_UNITS);
 	memset(flap_target_pos, 0, FLAP_UNITS);
 	_flap_read();
 	_update_moved();
@@ -111,8 +113,13 @@ static void _update_moved(void) {
 
 		if ((current_sens != last_sens) && (flap_pos[i] != 0xFF))
 			flap_pos[i]++;
-		if (current_reset)
+		if (current_reset) {
 			flap_pos[i] = 0;
+			if ((flap_pos[i] != 0xFF) && (flap_pos[i] != 0))
+				flap_counts[i] = flap_pos[i];
+		}
+		if (flap_target_pos[i] >= flap_counts[i])
+			flap_target_pos[i] = 0;
 	}
 
 	memcpy(_last_moved_sens, flap_sens_moved, FLAP_BYTES);
@@ -124,11 +131,17 @@ static inline bool _flap_in_progress(void) {
 
 void flap_set_all(uint8_t pos[FLAP_UNITS]) {
 	memcpy(flap_target_pos, pos, FLAP_UNITS);
+	for (uint8_t i = 0; i < FLAP_UNITS; i++)
+		if (flap_target_pos[i] >= flap_counts[i])
+			flap_target_pos[i] = 0;
 }
 
 void flap_set_single(uint8_t i, uint8_t pos) {
-	if (i < FLAP_UNITS)
+	if (i < FLAP_UNITS) {
+		if (pos >= flap_counts[i])
+			pos = 0;
 		flap_target_pos[i] = pos;
+	}
 }
 
 void flap_single_clap() {
