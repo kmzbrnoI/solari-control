@@ -4,7 +4,7 @@
 Solari di Udine platform board control script
 
 Usage:
-    control.py set_positions [options] <device> [<content.json>]
+    control.py set_positions [options] <device> [<content.json>] [-w|--wait]
     control.py flap [options] <device> <flapid>
     control.py loop [options] <device>
     control.py (-h | --help)
@@ -202,6 +202,11 @@ class SetPositions:
             self.positions_sent = True
             self.sent_positions = flap_all_positions(self.content)
             send(self.sport, UART_MSG_MS_SET_ALL, self.sent_positions)
+            if not args['-w']:
+                logging.info('Finished')
+                sys.exit(0)
+            else:
+                logging.info('Waiting for positions reached (-w present)...')
 
         if positions == self.sent_positions:
             logging.info('Finished')
