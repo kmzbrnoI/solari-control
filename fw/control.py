@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 
 """
-Usage:
-    control.py <device> [<content.json>]
+Solari di Udine platform board control script
 
-Content of content.json:
-{
-    "num": 12345,
-    "type": "Os",
-    "direction1": "Blansko",
-    "direction2": "Blansko",
-    "final": "Max. 14 znaků",
-    "time": "14:30",
-    "delay": "0:30"
-}
+Usage:
+    control.py set_positions [options] <device> [<content.json>]
+    control.py (-h | --help)
+    control.py --version
+
+Options:
+  -l <loglevel>     Specify loglevel (python logging package) [default: info]
+  -p --pos          Print received positions
+  -s --sens         Print received sensors
+  -t --target       Print received target
+
+See content.json for set_positions example
 """
 
 import serial
@@ -21,6 +22,10 @@ import sys
 import datetime
 from typing import List, Dict
 import json
+import docopt
+import logging
+
+APP_VERSION = '1.0'
 
 UART_RECEIVE_MAGIC = 0xB7
 UART_SEND_MAGIC = 0xCA
@@ -85,6 +90,7 @@ FLAP_DIRECTIONS_2 = [
 global sport
 global send_positions
 global received_positions
+args = {}
 
 
 def xor(data: List[int]) -> int:
@@ -101,7 +107,7 @@ def send(msgtype: int, data: List[int]) -> None:
     _data.insert(0, UART_SEND_MAGIC)
     _data.append(xor(_data))
 
-    print(f'Send: {_data}')
+    logging.debug(f'Send: {_data}')
     sport.write(_data)
 
 
@@ -110,13 +116,14 @@ def parse(data: List[int]) -> None:
     global received_positions
 
     if xor(data) != 0:
-        print(f'Invalid xor: {data}')
+        logging.warning(f'Invalid xor: {data}')
         return
 
-    # print('>>>>>> Received:', data)
+    logging.debug('>>>>>> Received:', data)
 
     if data[2] == UART_MSG_SM_POS:
-        print(f'Positions: {data[3:-1]}')
+        if args['--pos']:
+            logging.info(f'Positions: {data[3:-1]}')
         positions = data[3:-1]
         received_positions = positions
         assert len(positions) == FLAP_UNITS
@@ -124,11 +131,12 @@ def parse(data: List[int]) -> None:
             send_positions = True
 
     elif data[2] == UART_MSG_SM_TARGET:
-        print(f'Target: {data[3:-1]}')
+        if args['--target']:
+            logging.info(f'Target: {data[3:-1]}')
 
     elif data[2] == UART_MSG_SM_SENS:
-        print('Sensors: ', end='')
-        print(' '.join([f'{byte:#010b}' for byte in data[3:-1]]))
+        if args['--sens']:
+            logging.info('Sensors: ' + (' '.join([f'{byte:#010b}' for byte in data[3:-1]])))
 
 
 def flap_number(num: int, length: int) -> List[int]:  # always returns list of length `length`
@@ -180,21 +188,30 @@ def flap_all_positions(content: Dict) -> List[int]:  # always returns list of le
 if __name__ == '__main__':
     global send_positions
     global received_positions
+
     send_positions = False
     positions_sent = False
     received_positions = [0xFF] * FLAP_UNITS
 
-    if len(sys.argv) < 2:
-        sys.stderr.write(__doc__.strip()+'\n')
-        sys.exit(1)
+    args = docopt.docopt(__doc__, version=APP_VERSION)
 
-    if len(sys.argv) >= 3:
-        with open(sys.argv[2]) as f:
-            positions = json.loads(f.read())
-    else:
-        positions = {}
+    loglevel = {
+        'debug': logging.DEBUG,
+        'info': logging.INFO,
+        'warning': logging.WARNING,
+        'error': logging.ERROR,
+        'critical': logging.CRITICAL,
+    }.get(args['-l'], logging.INFO)
+    logging.basicConfig(level=loglevel)
 
-    sport = serial.Serial(sys.argv[1], 115200)
+    if args['set_positions']:
+        if args['<content.json>']:
+            with open(args['<content.json>']) as f:
+                positions = json.loads(f.read())
+        else:
+            positions = {}
+
+    sport = serial.Serial(args['<device>'], 115200)
 
     receive_buf = []
     last_receive_time = datetime.datetime.now()
@@ -204,12 +221,12 @@ if __name__ == '__main__':
             sys.stderr.write('Port interrupt!\n')
             sys.exit(1)
         if receive_buf and datetime.datetime.now()-last_receive_time > RECEIVE_TIMEOUT:
-            print('Clearing data, timeout!')
+            logging.debug('Clearing data, timeout!')
             receive_buf.clear()
         last_receive_time = datetime.datetime.now()
         receive_buf += received
         while len(receive_buf) > 0 and receive_buf[0] != UART_RECEIVE_MAGIC:
-            print(f'Popping packet: {receive_buf[0]}')
+            logging.debug(f'Popping packet: {receive_buf[0]}')
             receive_buf.pop(0)
 
         while len(receive_buf) >= 2 and len(receive_buf) >= receive_buf[1]+4:
@@ -217,15 +234,15 @@ if __name__ == '__main__':
             parse(receive_buf[0:packet_length])
             receive_buf = receive_buf[packet_length:]
             while len(receive_buf) > 0 and receive_buf[0] != UART_RECEIVE_MAGIC:
-                print(f'Popping packet: {receive_buf[0]}')
+                logging.debug(f'Popping packet: {receive_buf[0]}')
                 receive_buf.pop(0)
 
         if send_positions and not positions_sent:
-            print('Sending positions...')
+            logging.info('Sending positions...')
             send_positions = False
             positions_sent = True
             send(UART_MSG_MS_SET_ALL, flap_all_positions(positions))
 
         if positions == received_positions:
-            print('Finished')
+            logging.info('Finished')
             sys.exit(0)
