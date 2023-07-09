@@ -89,6 +89,16 @@ FLAP_DIRECTIONS_2 = [
     'Kojetín', 'Vlárský Průsmyk', 'Tábor-Veselí nad Lužnicí', '', 'Praha hl.n.',
     '', 'ODKLON']
 
+FLAP_DELAYS_MIN = [
+    5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80, 90, 100, 110,
+    120, 130, 140, 150, 160, 170, 180, 200, 220, 240, 260, 280, 300, 330, 360,
+    390, 420, 450, 480
+]
+
+FLAP_DELAYS_NEXT = [
+    ">480", "VLAK NEJEDE", "BUS"
+]
+
 
 def xor(data: List[int]) -> int:
     result = 0
@@ -104,7 +114,7 @@ def send(sport, msgtype: int, data: List[int]) -> None:
     _data.insert(0, UART_SEND_MAGIC)
     _data.append(xor(_data))
 
-    logging.debug(f'Send: {_data}')
+    logging.debug(f'< Send: {_data}')
     sport.write(_data)
 
 
@@ -113,7 +123,7 @@ def parse(data: List[int], program) -> None:
         logging.warning(f'Invalid xor: {data}')
         return
 
-    logging.debug('>>>>>> Received:', data)
+    logging.debug(f'> Received: {data}')
 
     if data[2] == UART_MSG_SM_POS:
         if args['--pos']:
@@ -147,9 +157,39 @@ def flap_final(final: str) -> List[int]:  # always returns list of length FLAP_F
     return [FLAP_ALPHABET.index(char) for char in final.lower().ljust(FLAP_FINAL_LEN, ' ')]
 
 
+def flap_delay(delay: str) -> int:
+    if delay.upper() in FLAP_DELAYS_NEXT:
+        return FLAP_DELAYS_NEXT.index(delay.upper()) + len(FLAP_DELAYS_MIN) + 1
+
+    if ':' in delay:
+        hours, minutes = map(int, delay.split(':'))
+        minutes += hours*60
+    elif delay.isdigit():
+        minutes = int(delay)
+    else:
+        assert False, 'Invalid delay'
+
+    if minutes > 480:
+        return len(FLAP_DELAYS_MIN) + 1
+
+    # Pick nearest lower delay
+    while minutes > 0 and minutes not in FLAP_DELAYS_MIN:
+        minutes -= 1
+
+    if minutes not in FLAP_DELAYS_MIN:
+        return 0
+
+    return FLAP_DELAYS_MIN.index(minutes) + 1
+
+
 def flap_all_positions(content: Dict) -> List[int]:  # always returns list of length FLAP_UNITS
     final = flap_final(content.get('final', ''))
     assert len(final) == FLAP_FINAL_LEN
+
+    if 'time' in content:
+        hours, minutes = map(int, content['time'].split(':'))
+    else:
+        hours, minutes = 0xFF, 0xFF
 
     result = []
     result += [FLAP_TYPES.index(content['type'])+1] if 'type' in content else [0]
@@ -164,21 +204,13 @@ def flap_all_positions(content: Dict) -> List[int]:  # always returns list of le
     assert len(result) == 12
     result += [FLAP_DIRECTIONS_1.index(content['direction1'])+1] if 'direction1' in content else [0]
     result += [FLAP_DIRECTIONS_2.index(content['direction2'])+1] if 'direction2' in content else [0]
-    result += [0, 0] # time TODO
-    result += final[2:11]  # 0x10-0x17
+    assert len(result) == 14
+    result += [hours+1] if hours != 0xFF else [0]
+    result += [(minutes//10)+1] if minutes != 0xFF else [0]
+    result += final[2:10]  # 0x10-0x17
+    result += [(minutes%10)+1] if minutes != 0xFF else [0]
+    result += [flap_delay(content['delay'])] if 'delay' in content else [0]
 
-    """
-    if 'time' in content:
-        hours, minutes = content['time'].split(':')
-        result += [int(hours)+1] + flap_number(minutes, 2)
-    else:
-        result += [0, 0, 0]
-    """
-
-    # TODO: delay
-
-    while len(result) < FLAP_UNITS:
-        result.append(0)
     return result
 
 
@@ -197,7 +229,7 @@ class SetPositions:
                 self.content = json.loads(f.read())
 
     def received_positions(self, positions: List[int]) -> None:
-        if not self.positions_sent and all([positions != 0xFF for pos in positions]):
+        if not self.positions_sent and all([pos != 0xFF for pos in positions]):
             logging.info('Sending positions...')
             self.positions_sent = True
             self.sent_positions = flap_all_positions(self.content)
@@ -216,11 +248,18 @@ class SetPositions:
 class Flap:
     def __init__(self, sport):
         self.sport = sport
+        self.sent = False
         logging.info('Waiting for device initialized...')
 
     def received_positions(self, positions: List[int]) -> None:
-        if all([positions != 0xFF for pos in positions]):
+        if all([pos != 0xFF for pos in positions]) and not self.sent:
+            logging.info('Sending flap...')
             send(self.sport, UART_MSG_MS_FLAP, [int(args['<flapid>'])])
+            self.sent = True
+
+
+    def received_target(self, target: List[int]) -> None:
+        if self.sent:
             logging.info('Flap sent.')
             sys.exit(0)
 
