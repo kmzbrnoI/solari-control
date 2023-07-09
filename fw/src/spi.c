@@ -6,7 +6,7 @@
 #include "io.h"
 
 /* CD4021 input shift registers: shifts on raising edge, max freq. = 12 MHz
- * CD4094 output shift registers: shifts on raising egde, max freq. = 5 MHz
+ * CD4094 output shift registers: shifts on falling egde, max freq. = 5 MHz
  * -> rising edge = setup, falling edge = sample
  * -> SCK by default high (but CPOL=0 because of inverting in PCB design) -> CPHA=0
  */
@@ -20,6 +20,7 @@ void spi_init(void) {
 }
 
 void spi_write(uint8_t* data, uint8_t size) {
+	SPCR |= (1 << CPHA);
 	io_strobe_off();
 	_delay_us(1);
 
@@ -29,6 +30,7 @@ void spi_write(uint8_t* data, uint8_t size) {
 	}
 
 	io_strobe_on();
+	SPCR &= ~(1 << CPHA);
 }
 
 void spi_read(uint8_t* data, uint8_t size) {
