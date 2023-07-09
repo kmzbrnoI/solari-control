@@ -114,9 +114,9 @@ static void _update_moved(void) {
 		if ((current_sens != last_sens) && (flap_pos[i] != 0xFF))
 			flap_pos[i]++;
 		if (current_reset) {
-			flap_pos[i] = 0;
 			if ((flap_pos[i] != 0xFF) && (flap_pos[i] != 0))
 				flap_counts[i] = flap_pos[i];
+			flap_pos[i] = 0;
 		}
 		if (flap_target_pos[i] >= flap_counts[i])
 			flap_target_pos[i] = 0;
