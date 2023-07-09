@@ -148,7 +148,10 @@ def flap_all_positions(content: Dict) -> List[int]:  # always returns list of le
 
     result = []
     result += [FLAP_TYPES.index(content['type'])+1] if 'type' in content else [0]
-    result += flap_number(content.get('num', 0), FLAP_TRAINNUM_COUNT)
+    trainnum = flap_number(content.get('num', 0), FLAP_TRAINNUM_COUNT)
+    if content.get('num_red', False):
+        trainnum = [v+10 for v in trainnum]
+    result += trainnum
     assert len(result) == 6
     result += final[0:2]
     assert len(result) == 8

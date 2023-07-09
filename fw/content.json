@@ -1,9 +1,10 @@
 {
-    "_num": 12345,
-    "_type": "Os",
-    "_direction1": "Blansko",
-    "_direction2": "Blansko",
-    "final": "plantážník",
+    "num": 1370,
+    "num_red": false,
+    "type": "TGV",
+    "direction1": "Kuřim-Tišnov",
+    "direction2": "S3",
+    "final": "seš plantážník",
     "_time": "14:30",
     "_delay": "0:30"
 }
