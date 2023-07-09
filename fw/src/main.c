@@ -154,7 +154,7 @@ static void uart_process_received(void) {
 		break;
 	case UART_MSG_MS_FLAP: {
 			const uint8_t unit = uart_input_buf[3];
-			if ((data_len >= 2) && (flap_target_pos[unit] != 0xFF)) {
+			if ((data_len >= 1) && (flap_target_pos[unit] != 0xFF)) {
 				flap_set_single(unit, flap_target_pos[unit]+1);
 				uart_req.sep.target = true;
 			}

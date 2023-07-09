@@ -5,6 +5,7 @@ Solari di Udine platform board control script
 
 Usage:
     control.py set_positions [options] <device> [<content.json>]
+    control.py flap [options] <device> <flapid>
     control.py (-h | --help)
     control.py --version
 
@@ -87,11 +88,6 @@ FLAP_DIRECTIONS_2 = [
     'Kojetín', 'Vlárský Průsmyk', 'Tábor-Veselí nad Lužnicí', '', 'Praha hl.n.',
     '', 'ODKLON']
 
-global sport
-global send_positions
-global received_positions
-args = {}
-
 
 def xor(data: List[int]) -> int:
     result = 0
@@ -100,7 +96,7 @@ def xor(data: List[int]) -> int:
     return result
 
 
-def send(msgtype: int, data: List[int]) -> None:
+def send(sport, msgtype: int, data: List[int]) -> None:
     _data = data[:]
     _data.insert(0, msgtype)
     _data.insert(0, len(data))
@@ -111,10 +107,7 @@ def send(msgtype: int, data: List[int]) -> None:
     sport.write(_data)
 
 
-def parse(data: List[int]) -> None:
-    global send_positions
-    global received_positions
-
+def parse(data: List[int], program) -> None:
     if xor(data) != 0:
         logging.warning(f'Invalid xor: {data}')
         return
@@ -125,18 +118,21 @@ def parse(data: List[int]) -> None:
         if args['--pos']:
             logging.info(f'Positions: {data[3:-1]}')
         positions = data[3:-1]
-        received_positions = positions
         assert len(positions) == FLAP_UNITS
-        if all([pos != 0xFF for pos in positions]):
-            send_positions = True
+        if getattr(program, 'received_positions', None):
+            program.received_positions(positions)
 
     elif data[2] == UART_MSG_SM_TARGET:
         if args['--target']:
             logging.info(f'Target: {data[3:-1]}')
+        if getattr(program, 'received_target', None):
+            program.received_target(data[3:-1])
 
     elif data[2] == UART_MSG_SM_SENS:
         if args['--sens']:
             logging.info('Sensors: ' + (' '.join([f'{byte:#010b}' for byte in data[3:-1]])))
+        if getattr(program, 'received_sensors', None):
+            program.received_sensors(data[3:-1])
 
 
 def flap_number(num: int, length: int) -> List[int]:  # always returns list of length `length`
@@ -185,14 +181,49 @@ def flap_all_positions(content: Dict) -> List[int]:  # always returns list of le
     return result
 
 
+###############################################################################
+# Subprograms
+
+class SetPositions:
+    def __init__(self, sport):
+        self.sport = sport
+        self.positions_sent = False
+        self.sent_positions = []
+
+        self.content = {}
+        if args['<content.json>']:
+            with open(args['<content.json>']) as f:
+                self.content = json.loads(f.read())
+
+    def received_positions(self, positions: List[int]) -> None:
+        if not self.positions_sent and all([positions != 0xFF for pos in positions]):
+            logging.info('Sending positions...')
+            self.positions_sent = True
+            self.sent_positions = flap_all_positions(self.content)
+            send(self.sport, UART_MSG_MS_SET_ALL, self.sent_positions)
+
+        if positions == self.sent_positions:
+            logging.info('Finished')
+            sys.exit(0)
+
+
+class Flap:
+    def __init__(self, sport):
+        self.sport = sport
+        logging.info('Waiting for device initialized...')
+
+    def received_positions(self, positions: List[int]) -> None:
+        if all([positions != 0xFF for pos in positions]):
+            send(self.sport, UART_MSG_MS_FLAP, [int(args['<flapid>'])])
+            logging.info('Flap sent.')
+            sys.exit(0)
+
+
+###############################################################################
+# Main
+
 if __name__ == '__main__':
-    global send_positions
-    global received_positions
-
-    send_positions = False
-    positions_sent = False
-    received_positions = [0xFF] * FLAP_UNITS
-
+    global args
     args = docopt.docopt(__doc__, version=APP_VERSION)
 
     loglevel = {
@@ -202,16 +233,20 @@ if __name__ == '__main__':
         'error': logging.ERROR,
         'critical': logging.CRITICAL,
     }.get(args['-l'], logging.INFO)
-    logging.basicConfig(level=loglevel)
-
-    if args['set_positions']:
-        if args['<content.json>']:
-            with open(args['<content.json>']) as f:
-                positions = json.loads(f.read())
-        else:
-            positions = {}
+    logging.basicConfig(
+        level=loglevel,
+        format='[%(asctime)s.%(msecs)03d] %(levelname)s %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+    )
 
     sport = serial.Serial(args['<device>'], 115200)
+
+    if args['set_positions']:
+        program = SetPositions(sport)
+    elif args['flap']:
+        program = Flap(sport)
+    else:
+        assert False, 'Unknown program'
 
     receive_buf = []
     last_receive_time = datetime.datetime.now()
@@ -231,18 +266,11 @@ if __name__ == '__main__':
 
         while len(receive_buf) >= 2 and len(receive_buf) >= receive_buf[1]+4:
             packet_length = receive_buf[1]+4
-            parse(receive_buf[0:packet_length])
+            parse(receive_buf[0:packet_length], program)
             receive_buf = receive_buf[packet_length:]
             while len(receive_buf) > 0 and receive_buf[0] != UART_RECEIVE_MAGIC:
                 logging.debug(f'Popping packet: {receive_buf[0]}')
                 receive_buf.pop(0)
 
-        if send_positions and not positions_sent:
-            logging.info('Sending positions...')
-            send_positions = False
-            positions_sent = True
-            send(UART_MSG_MS_SET_ALL, flap_all_positions(positions))
-
-        if positions == received_positions:
-            logging.info('Finished')
-            sys.exit(0)
+        if getattr(program, 'iter', None):
+            program.iter()
