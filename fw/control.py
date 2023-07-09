@@ -186,31 +186,25 @@ def flap_all_positions(content: Dict) -> List[int]:  # always returns list of le
     final = flap_final(content.get('final', ''))
     assert len(final) == FLAP_FINAL_LEN
 
-    if 'time' in content:
-        hours, minutes = map(int, content['time'].split(':'))
-    else:
-        hours, minutes = 0xFF, 0xFF
+    hours, minutes = map(int, content['time'].split(':')) if 'time' in content else (0xFF, 0xFF)
 
     result = []
     result += [FLAP_TYPES.index(content['type'])+1] if 'type' in content else [0]
     trainnum = flap_number(content.get('num', 0), FLAP_TRAINNUM_COUNT)
     if content.get('num_red', False):
-        trainnum = [v+10 for v in trainnum]
+        trainnum = [v+10 if v != 0 else 0 for v in trainnum]
     result += trainnum
-    assert len(result) == 6
     result += final[0:2]
-    assert len(result) == 8
     result += final[10:14]
-    assert len(result) == 12
     result += [FLAP_DIRECTIONS_1.index(content['direction1'])+1] if 'direction1' in content else [0]
     result += [FLAP_DIRECTIONS_2.index(content['direction2'])+1] if 'direction2' in content else [0]
-    assert len(result) == 14
     result += [hours+1] if hours != 0xFF else [0]
     result += [(minutes//10)+1] if minutes != 0xFF else [0]
     result += final[2:10]  # 0x10-0x17
     result += [(minutes%10)+1] if minutes != 0xFF else [0]
     result += [flap_delay(content['delay'])] if 'delay' in content else [0]
 
+    assert len(result) == FLAP_UNITS
     return result
 
 
@@ -230,9 +224,9 @@ class SetPositions:
 
     def received_positions(self, positions: List[int]) -> None:
         if not self.positions_sent and all([pos != 0xFF for pos in positions]):
-            logging.info('Sending positions...')
             self.positions_sent = True
             self.sent_positions = flap_all_positions(self.content)
+            logging.info(f'Sending positions: {self.sent_positions} ...')
             send(self.sport, UART_MSG_MS_SET_ALL, self.sent_positions)
             if not args['-w']:
                 logging.info('Finished')
@@ -256,7 +250,6 @@ class Flap:
             logging.info('Sending flap...')
             send(self.sport, UART_MSG_MS_FLAP, [int(args['<flapid>'])])
             self.sent = True
-
 
     def received_target(self, target: List[int]) -> None:
         if self.sent:

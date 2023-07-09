@@ -1,10 +1,10 @@
 {
     "num": 1370,
-    "num_red": false,
-    "type": "TGV",
+    "num_red": true,
+    "type": "Parní vlak",
     "direction1": "Kuřim-Tišnov",
     "direction2": "S3",
-    "final": "seš plantážník",
+    "final": "Nedvědice",
     "time": "14:30",
-    "delay": "8:00"
+    "delay": "0:15"
 }
