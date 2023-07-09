@@ -6,6 +6,7 @@ Solari di Udine platform board control script
 Usage:
     control.py set_positions [options] <device> [<content.json>]
     control.py flap [options] <device> <flapid>
+    control.py loop [options] <device>
     control.py (-h | --help)
     control.py --version
 
@@ -219,6 +220,11 @@ class Flap:
             sys.exit(0)
 
 
+class Loop:
+    def __init__(self, sport):
+        pass
+
+
 ###############################################################################
 # Main
 
@@ -245,6 +251,8 @@ if __name__ == '__main__':
         program = SetPositions(sport)
     elif args['flap']:
         program = Flap(sport)
+    elif args['loop']:
+        program = Loop(sport)
     else:
         assert False, 'Unknown program'
 
