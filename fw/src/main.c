@@ -18,6 +18,9 @@ int main();
 static inline void init(void);
 static void uart_process_received(void);
 static void _uart_process_txreq(void);
+static void _uart_req_set_sens(FlapSide side, bool value);
+static void _uart_req_set_pos(FlapSide side, bool value);
+static void _uart_req_set_target(FlapSide side, bool value);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -31,9 +34,12 @@ volatile bool _flap_txreq;
 typedef union {
 	uint8_t all;
 	struct {
-		bool sens : 1;
-		bool pos : 1;
-		bool target : 1;
+		bool sens_side1 : 1;
+		bool sens_side2 : 1;
+		bool pos_side1 : 1;
+		bool pos_side2 : 1;
+		bool target_side1 : 1;
+		bool target_side2 : 1;
 	} sep;
 } UartRequests;
 
@@ -60,8 +66,8 @@ int main() {
 			_counter_flap_clap = 0;
 			io_led_green_toggle();
 			if (_flap_txreq) {
-				uart_req.sep.sens = true;
-				uart_req.sep.pos = true;
+				uart_req.sep.sens_side1 = uart_req.sep.sens_side2 = true;
+				uart_req.sep.pos_side1 = uart_req.sep.pos_side2 = true;
 			}
 			_flap_txreq = true;
 		}
@@ -69,8 +75,8 @@ int main() {
 		if (flap_moved_changed) {
 			flap_moved_changed = false;
 			if (_flap_txreq) {
-				uart_req.sep.sens = true;
-				uart_req.sep.pos = true;
+				uart_req.sep.sens_side1 = uart_req.sep.sens_side2 = true;
+				uart_req.sep.pos_side1 = uart_req.sep.pos_side2 = true;
 				_flap_txreq = false;
 			}
 		}
@@ -144,32 +150,37 @@ static void uart_process_received(void) {
 
 	switch (uart_input_buf[2]) { // message type
 	case UART_MSG_MS_GET_SENS:
-		uart_req.sep.sens = true;
+		uart_req.sep.sens_side1 = uart_req.sep.sens_side2 = true;
 		break;
 	case UART_MSG_MS_GET_POS:
-		uart_req.sep.pos = true;
+		uart_req.sep.pos_side1 = uart_req.sep.pos_side2 = true;
 		break;
 	case UART_MSG_MS_GET_TARGET:
-		uart_req.sep.target = true;
+		uart_req.sep.target_side1 = uart_req.sep.target_side2 = true;
 		break;
-	case UART_MSG_MS_FLAP: {
-			const uint8_t unit = uart_input_buf[3];
-			if ((data_len >= 1) && (flap_target_pos[unit] != 0xFF)) {
-				flap_set_single(unit, flap_target_pos[unit]+1);
-				uart_req.sep.target = true;
+	case UART_MSG_MS_FLAP:
+		if (data_len >= 2) {
+			const uint8_t side = uart_input_buf[3];
+			const uint8_t unit = uart_input_buf[4];
+			if ((side < FLAP_SIDES) && (flap_target_pos[side][unit] != 0xFF)) {
+				flap_set_single(side, unit, flap_target_pos[side][unit]+1);
+				_uart_req_set_target(side, true);
 			}
 		}
 		break;
 	case UART_MSG_MS_SET_SINGLE:
-		if (data_len >= 2) {
-			flap_set_single(uart_input_buf[3], uart_input_buf[4]);
-			uart_req.sep.target = true;
+		if (data_len >= 3) {
+			const uint8_t side = uart_input_buf[3];
+			if (side < FLAP_SIDES) {
+				flap_set_single(side, uart_input_buf[4], uart_input_buf[5]);
+				_uart_req_set_target(side, true);
+			}
 		}
 		break;
 	case UART_MSG_MS_SET_ALL:
-		if (data_len >= FLAP_UNITS) {
-			flap_set_all((uint8_t*)&uart_input_buf[3]);
-			uart_req.sep.target = true;
+		if (data_len >= (FLAP_UNITS+1) && (uart_input_buf[3] < FLAP_SIDES)) {
+			flap_set_all(uart_input_buf[3], (uint8_t*)&uart_input_buf[4]);
+			_uart_req_set_target(uart_input_buf[3], true);
 		}
 		break;
 	}
@@ -181,28 +192,58 @@ static void _uart_process_txreq(void) {
 	if (!uart_can_fill_output_buf())
 		return;
 
-	if (uart_req.sep.sens) {
-		uart_output_buf[1] = 2*FLAP_BYTES;
+	if ((uart_req.sep.sens_side1) || (uart_req.sep.sens_side2)) {
+		const uint8_t side = (uart_req.sep.sens_side1) ? 0 : 1;
+		uart_output_buf[1] = (2*FLAP_BYTES) + 1;
 		uart_output_buf[2] = UART_MSG_SM_SENS;
+		uart_output_buf[3] = side;
 		for (uint8_t i = 0; i < FLAP_BYTES; i++)
-			uart_output_buf[3+i] = flap_sens_moved[i];
+			uart_output_buf[4+i] = flap_sens_moved[side][i];
 		for (uint8_t i = 0; i < FLAP_BYTES; i++)
-			uart_output_buf[3+FLAP_BYTES+i] = flap_sens_reset[i];
+			uart_output_buf[4+FLAP_BYTES+i] = flap_sens_reset[side][i];
 		if (uart_send_buf() == 0)
-			uart_req.sep.sens = false;
-	} else if (uart_req.sep.pos) {
-		uart_output_buf[1] = FLAP_UNITS;
+			_uart_req_set_sens(side, false);
+	} else if ((uart_req.sep.pos_side1) || (uart_req.sep.pos_side2)) {
+		const uint8_t side = (uart_req.sep.pos_side1) ? 0 : 1;
+		uart_output_buf[1] = FLAP_UNITS + 1;
 		uart_output_buf[2] = UART_MSG_SM_POS;
+		uart_output_buf[3] = side | (flap_target_reached(side) << 1);
 		for (uint8_t i = 0; i < FLAP_UNITS; i++)
-			uart_output_buf[3+i] = flap_pos[i];
+			uart_output_buf[4+i] = flap_pos[side][i];
 		if (uart_send_buf() == 0)
-			uart_req.sep.pos = false;
-	} else if (uart_req.sep.target) {
-		uart_output_buf[1] = FLAP_UNITS;
+			_uart_req_set_pos(side, false);
+	} else if ((uart_req.sep.target_side1) || (uart_req.sep.target_side2)) {
+		const uint8_t side = (uart_req.sep.target_side1) ? 0 : 1;
+		uart_output_buf[1] = FLAP_UNITS + 1;
 		uart_output_buf[2] = UART_MSG_SM_TARGET;
+		uart_output_buf[3] = side;
 		for (uint8_t i = 0; i < FLAP_UNITS; i++)
-			uart_output_buf[3+i] = flap_target_pos[i];
+			uart_output_buf[4+i] = flap_target_pos[side][i];
 		if (uart_send_buf() == 0)
-			uart_req.sep.target = false;
+			_uart_req_set_target(side, false);
+	}
+}
+
+static void _uart_req_set_sens(FlapSide side, bool value) {
+	switch (side) {
+		case SideA: uart_req.sep.sens_side1 = true; break;
+		case SideB: uart_req.sep.sens_side2 = true; break;
+		default: break;
+	}
+}
+
+static void _uart_req_set_pos(FlapSide side, bool value) {
+	switch (side) {
+		case SideA: uart_req.sep.pos_side1 = true; break;
+		case SideB: uart_req.sep.pos_side2 = true; break;
+		default: break;
+	}
+}
+
+static void _uart_req_set_target(FlapSide side, bool value) {
+	switch (side) {
+		case SideA: uart_req.sep.target_side1 = true; break;
+		case SideB: uart_req.sep.target_side2 = true; break;
+		default: break;
 	}
 }

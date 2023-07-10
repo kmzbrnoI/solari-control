@@ -1,3 +1,5 @@
+#include <avr/interrupt.h>
+#include "io.h"
 #include "common.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -9,3 +11,10 @@ uint8_t reverse_uint8_bits_order(uint8_t b) {
 	return b;
 }
 
+void fail(void) {
+	cli();
+	io_led_green_off();
+	io_led_yellow_off();
+	io_led_red_on();
+	while (true);
+}

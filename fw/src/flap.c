@@ -9,16 +9,17 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Variables
 
-uint8_t flap_sens_reset[FLAP_BYTES];
-uint8_t flap_sens_moved[FLAP_BYTES];
-uint8_t flap_pos[FLAP_UNITS];
-uint8_t flap_counts[FLAP_UNITS];
+uint8_t flap_sens_reset[FLAP_SIDES][FLAP_BYTES];
+uint8_t flap_sens_moved[FLAP_SIDES][FLAP_BYTES];
+uint8_t flap_pos[FLAP_SIDES][FLAP_UNITS];
+uint8_t flap_counts[FLAP_SIDES][FLAP_UNITS];
+uint8_t flap_target_pos[FLAP_SIDES][FLAP_UNITS];
 
-uint8_t _last_moved_sens[FLAP_BYTES];
+uint8_t _last_moved_sens[FLAP_SIDES][FLAP_BYTES];
 bool _next_ip;
 uint8_t _active_out_timer;
 bool flap_moved_changed;
-uint8_t flap_target_pos[FLAP_UNITS];
+FlapSide flap_side;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Local functions prototypes
@@ -26,6 +27,8 @@ uint8_t flap_target_pos[FLAP_UNITS];
 static void _flap_read(void);
 static void _update_moved(void);
 static inline bool _flap_in_progress(void);
+static void _set_side(FlapSide side);
+static void flap_flap(uint8_t which[FLAP_BYTES]);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -33,11 +36,22 @@ void flap_init(void) {
 	_next_ip = true;
 	_active_out_timer = ACTIVE_OUT_MS;
 	flap_moved_changed = false;
-	memset(flap_pos, 0xFF, FLAP_UNITS);
-	memset(flap_counts, 0xFF, FLAP_UNITS);
-	memset(flap_target_pos, 0, FLAP_UNITS);
-	_flap_read();
-	_update_moved();
+
+	for (uint8_t i = 0; i < FLAP_SIDES; i++) {
+		memset(flap_pos[i], 0xFF, FLAP_UNITS);
+		memset(flap_counts[i], 0xFF, FLAP_UNITS);
+		memset(flap_target_pos[i], 0, FLAP_UNITS);
+	}
+
+	for (uint8_t i = 0; i < FLAP_SIDES; i++) {
+		_set_side(i);
+		_delay_ms(500);
+		_flap_read();
+		memcpy(_last_moved_sens[i], flap_sens_moved[i], FLAP_BYTES);
+		_update_moved();
+	}
+
+	_set_side(NoSide);
 }
 
 void flap_flap(uint8_t which[FLAP_BYTES]) {
@@ -83,6 +97,9 @@ static void _flap_read(void) {
 	 */
 	uint8_t received[FLAP_BYTES];
 
+	if (flap_side >= FLAP_SIDES)
+		fail();
+
 	io_z_off();
 	io_p_on();
 	_delay_us(10);
@@ -90,7 +107,7 @@ static void _flap_read(void) {
 
 	// invert received bytes
 	for (size_t i = 0; i < FLAP_BYTES; i++)
-		flap_sens_moved[FLAP_BYTES-i-1] = reverse_uint8_bits_order(received[i]);
+		flap_sens_moved[flap_side][FLAP_BYTES-i-1] = reverse_uint8_bits_order(received[i]);
 
 	io_z_on();
 	io_p_off();
@@ -99,63 +116,103 @@ static void _flap_read(void) {
 
 	// invert received bytes
 	for (size_t i = 0; i < FLAP_BYTES; i++)
-		flap_sens_reset[FLAP_BYTES-i-1] = reverse_uint8_bits_order(~received[i]);
+		flap_sens_reset[flap_side][FLAP_BYTES-i-1] = reverse_uint8_bits_order(~received[i]);
 
 	io_z_off();
 	io_p_off();
 }
 
 static void _update_moved(void) {
-	for (uint8_t i = 0; i < FLAP_UNITS; i++) {
-		const bool current_sens = ((flap_sens_moved[i/8] >> (i%8)) & 1);
-		const bool current_reset = ((flap_sens_reset[i/8] >> (i%8)) & 1);
-		const bool last_sens = ((_last_moved_sens[i/8] >> (i%8)) & 1);
+	if (flap_side >= FLAP_SIDES)
+		fail();
 
-		if ((current_sens != last_sens) && (flap_pos[i] != 0xFF))
-			flap_pos[i]++;
+	for (uint8_t i = 0; i < FLAP_UNITS; i++) {
+		const bool current_sens = ((flap_sens_moved[flap_side][i/8] >> (i%8)) & 1);
+		const bool current_reset = ((flap_sens_reset[flap_side][i/8] >> (i%8)) & 1);
+		const bool last_sens = ((_last_moved_sens[flap_side][i/8] >> (i%8)) & 1);
+
+		if ((current_sens != last_sens) && (flap_pos[flap_side][i] != 0xFF))
+			flap_pos[flap_side][i]++;
 		if (current_reset) {
-			if ((flap_pos[i] != 0xFF) && (flap_pos[i] != 0))
-				flap_counts[i] = flap_pos[i];
-			flap_pos[i] = 0;
+			if ((flap_pos[flap_side][i] != 0xFF) && (flap_pos[flap_side][i] != 0))
+				flap_counts[flap_side][i] = flap_pos[flap_side][i];
+			flap_pos[flap_side][i] = 0;
 		}
-		if (flap_target_pos[i] >= flap_counts[i])
-			flap_target_pos[i] = 0;
+		if (flap_target_pos[flap_side][i] >= flap_counts[flap_side][i])
+			flap_target_pos[flap_side][i] = 0;
 	}
 
-	memcpy(_last_moved_sens, flap_sens_moved, FLAP_BYTES);
+	memcpy(_last_moved_sens[flap_side], flap_sens_moved[flap_side], FLAP_BYTES);
 }
 
 static inline bool _flap_in_progress(void) {
 	return _active_out_timer < ACTIVE_OUT_MS;
 }
 
-void flap_set_all(uint8_t pos[FLAP_UNITS]) {
-	memcpy(flap_target_pos, pos, FLAP_UNITS);
+void flap_set_all(FlapSide side, uint8_t pos[FLAP_UNITS]) {
+	if (side >= FLAP_SIDES)
+		fail();
+
+	memcpy(flap_target_pos[side], pos, FLAP_UNITS);
 	for (uint8_t i = 0; i < FLAP_UNITS; i++)
-		if (flap_target_pos[i] >= flap_counts[i])
-			flap_target_pos[i] = 0;
+		if (flap_target_pos[side][i] >= flap_counts[side][i])
+			flap_target_pos[side][i] = 0;
 }
 
-void flap_set_single(uint8_t i, uint8_t pos) {
+void flap_set_single(FlapSide side, uint8_t i, uint8_t pos) {
 	if (i < FLAP_UNITS) {
-		if (pos >= flap_counts[i])
+		if (pos >= flap_counts[side][i])
 			pos = 0;
-		flap_target_pos[i] = pos;
+		flap_target_pos[side][i] = pos;
 	}
 }
 
 void flap_single_clap() {
-	if (memcmp((char*)flap_pos, (char*)flap_target_pos, FLAP_UNITS) == 0)
-		return;
 	if (_flap_in_progress())
 		return;
+
+	if ((flap_target_reached(SideA)) && (flap_target_reached(SideB))) {
+		if (flap_side != NoSide)
+			_set_side(NoSide);
+		return;
+	}
+
+	if ((flap_side == NoSide) || (flap_target_reached(flap_side))) {
+		_set_side(flap_target_reached(SideA) ? SideB : SideA);
+		return; // flap next cycle
+	}
 
 	uint8_t to_flap[FLAP_BYTES];
 	memset(to_flap, 0, FLAP_BYTES);
 
 	for (uint8_t i = 0; i < FLAP_UNITS; i++)
-		if (flap_pos[i] != flap_target_pos[i])
+		if (flap_pos[flap_side][i] != flap_target_pos[flap_side][i])
 			to_flap[i/8] |= (1 << (i%8));
 
 	flap_flap(to_flap);
+}
+
+static void _set_side(FlapSide side) {
+	flap_side = side;
+	switch (side) {
+	case SideA:
+		io_rel1_on();
+		io_rel2_off();
+		break;
+	case SideB:
+		io_rel1_off();
+		io_rel2_on();
+		break;
+	case NoSide:
+		io_rel1_off();
+		io_rel2_off();
+		break;
+	}
+}
+
+bool flap_target_reached(FlapSide side) {
+	if (side >= FLAP_SIDES)
+		fail();
+
+	return (memcmp((char*)flap_pos[side], (char*)flap_target_pos[side], FLAP_UNITS) != 0);
 }
