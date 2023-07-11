@@ -100,16 +100,12 @@ static inline void init(void) {
 
 	uart_init();
 	spi_init();
-	io_rel2_on();
 
 	// Setup timer 0 @ 1 kHz (period 1 ms)
 	TCCR0A = (1 << WGM01); // CTC mode
 	TCCR0B = (1 << CS01) | (1 << CS00); // CTC mode, prescaler 64×
 	TIMSK0 = (1 << OCIE0A); // enable compare match interrupt
 	OCR0A = 229;
-
-	for (uint8_t i = 0; i < 5; i++)
-		_delay_ms(200);
 
 	flap_init(); // must be initialized after some time
 

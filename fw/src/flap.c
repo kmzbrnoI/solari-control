@@ -214,5 +214,5 @@ bool flap_target_reached(FlapSide side) {
 	if (side >= FLAP_SIDES)
 		fail();
 
-	return (memcmp((char*)flap_pos[side], (char*)flap_target_pos[side], FLAP_UNITS) != 0);
+	return (memcmp((char*)flap_pos[side], (char*)flap_target_pos[side], FLAP_UNITS) == 0);
 }
