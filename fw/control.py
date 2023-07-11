@@ -4,9 +4,9 @@
 Solari di Udine platform board control script
 
 Usage:
-    control.py set_positions [options] <device> [<content.json>] [-w|--wait]
-    control.py flap [options] <device> <flapid>
-    control.py loop [options] <device>
+    control.py set_positions [options] <device> <side> [<content.json>] [-w|--wait]
+    control.py flap [options] <device> <flapid> <side>
+    control.py loop [options] <device> [<side>]
     control.py (-h | --help)
     control.py --version
 
@@ -118,6 +118,25 @@ def send(sport, msgtype: int, data: List[int]) -> None:
     sport.write(_data)
 
 
+def side_str(_side: int) -> str:
+    if _side == 0:
+        return 'A'
+    elif _side == 1:
+        return 'B'
+    else:
+        return '?'
+
+
+def side_int(_side: str) -> int:
+    _side = _side.lower()
+    if _side == 'a':
+        return 0
+    elif _side == 'b':
+        return 1
+
+    assert False, 'Invalid side'
+
+
 def parse(data: List[int], program) -> None:
     if xor(data) != 0:
         logging.warning(f'Invalid xor: {data}')
@@ -126,24 +145,28 @@ def parse(data: List[int], program) -> None:
     logging.debug(f'> Received: {data}')
 
     if data[2] == UART_MSG_SM_POS:
-        if args['--pos']:
-            logging.info(f'Positions: {data[3:-1]}')
-        positions = data[3:-1]
-        assert len(positions) == FLAP_UNITS
-        if getattr(program, 'received_positions', None):
-            program.received_positions(positions)
+        if args['<side>'] is None or data[3] == args['<side>']:
+            if args['--pos']:
+                logging.info(f'Side: {side_str(data[3])} Positions: {data[4:-1]}')
+            positions = data[4:-1]
+            assert len(positions) == FLAP_UNITS
+            if getattr(program, 'received_positions', None):
+                program.received_positions(positions)
 
     elif data[2] == UART_MSG_SM_TARGET:
-        if args['--target']:
-            logging.info(f'Target: {data[3:-1]}')
-        if getattr(program, 'received_target', None):
-            program.received_target(data[3:-1])
+        if args['<side>'] is None or data[3] == args['<side>']:
+            if args['--target']:
+                logging.info(f'Side: {side_str(data[3])} Target: {data[4:-1]}')
+            if getattr(program, 'received_target', None):
+                program.received_target(data[4:-1])
 
     elif data[2] == UART_MSG_SM_SENS:
-        if args['--sens']:
-            logging.info('Sensors: ' + (' '.join([f'{byte:#010b}' for byte in data[3:-1]])))
-        if getattr(program, 'received_sensors', None):
-            program.received_sensors(data[3:-1])
+        if args['<side>'] is None or data[3] == args['<side>']:
+            if args['--sens']:
+                logging.info(f'Side: {side_str(data[3])} Sensors: ' +
+                             (' '.join([f'{byte:#010b}' for byte in data[4:-1]])))
+            if getattr(program, 'received_sensors', None):
+                program.received_sensors(data[4:-1])
 
 
 def flap_number(num: int, length: int) -> List[int]:  # always returns list of length `length`
@@ -268,6 +291,7 @@ class Loop:
 if __name__ == '__main__':
     global args
     args = docopt.docopt(__doc__, version=APP_VERSION)
+    args['<side>'] = side_int(args['<side>']) if args['<side>'] is not None else None
 
     loglevel = {
         'debug': logging.DEBUG,

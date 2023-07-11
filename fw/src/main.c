@@ -226,24 +226,24 @@ static void _uart_process_txreq(void) {
 
 static void _uart_req_set_sens(FlapSide side, bool value) {
 	switch (side) {
-		case SideA: uart_req.sep.sens_side1 = true; break;
-		case SideB: uart_req.sep.sens_side2 = true; break;
+		case SideA: uart_req.sep.sens_side1 = value; break;
+		case SideB: uart_req.sep.sens_side2 = value; break;
 		default: break;
 	}
 }
 
 static void _uart_req_set_pos(FlapSide side, bool value) {
 	switch (side) {
-		case SideA: uart_req.sep.pos_side1 = true; break;
-		case SideB: uart_req.sep.pos_side2 = true; break;
+		case SideA: uart_req.sep.pos_side1 = value; break;
+		case SideB: uart_req.sep.pos_side2 = value; break;
 		default: break;
 	}
 }
 
 static void _uart_req_set_target(FlapSide side, bool value) {
 	switch (side) {
-		case SideA: uart_req.sep.target_side1 = true; break;
-		case SideB: uart_req.sep.target_side2 = true; break;
+		case SideA: uart_req.sep.target_side1 = value; break;
+		case SideB: uart_req.sep.target_side2 = value; break;
 		default: break;
 	}
 }
