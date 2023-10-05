@@ -4,7 +4,8 @@
 Solari di Udine platform board control script
 
 Usage:
-    control.py set_positions [options] <device> <side> [<content.json>] [-w|--wait]
+    control.py set_positions [options] [--file=<filename.json>] [-w|--wait] <device> <side>
+    control.py reset [options] [-w|--wait] <device> <side>
     control.py flap [options] <device> <flapid> <side>
     control.py loop [options] <device> [<side>]
     control.py (-h | --help)
@@ -15,6 +16,8 @@ Options:
   -p --pos          Print received positions
   -s --sens         Print received sensors
   -t --target       Print received target
+
+Side: 0/1
 
 See content.json for set_positions example
 """
@@ -241,9 +244,11 @@ class SetPositions:
         self.sent_positions = []
 
         self.content = {}
-        if args['<content.json>']:
-            with open(args['<content.json>']) as f:
+        if args['--file']:
+            with open(args['--file']) as f:
                 self.content = json.loads(f.read())
+        elif args['set_positions']:
+            self.content = json.loads(input())
 
     def received_positions(self, positions: List[int]) -> None:
         if not self.positions_sent and all([pos != 0xFF for pos in positions]):
@@ -307,8 +312,9 @@ if __name__ == '__main__':
     )
 
     sport = serial.Serial(args['<device>'], 115200)
+    logging.debug(f'Connected to {args["<device>"]}')
 
-    if args['set_positions']:
+    if args['set_positions'] or args['reset']:
         program = SetPositions(sport)
     elif args['flap']:
         program = Flap(sport)
