@@ -17,7 +17,7 @@ Options:
   -s --sens         Print received sensors
   -t --target       Print received target
 
-Side: 0/1
+Side: A/B
 
 See content.json for set_positions example
 """
