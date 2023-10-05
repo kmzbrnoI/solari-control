@@ -2,4 +2,3 @@ build
 obj
 *.dep
 *.swp
-__pycache__
