@@ -49,20 +49,21 @@ $DIR2 = array(
 $DELAYS = array(
     0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80, 90, 100, 110,
     120, 130, 140, 150, 160, 170, 180, 200, 220, 240, 260, 280, 300, 330, 360,
-    390, 420, 450, 480
+    390, 420, 450, 480, '>480', 'VLAK NEJEDE', 'BUS'
 );
 
 $SIDES = array('A', 'B');
 
-$DEVICE = "/dev/tta";
+$DEVICE = "/dev/ttyAMA0";
 
 if (isset($_POST)) {
-  $output = "";
+  $output = null;
+  $retval = null;
 
   if ($_POST["submit"] == "Zobrazit") {
     $dict = [
       "num" => $_POST["trainnum"],
-      //"num_red" => $_POST["trainnum_red"],
+      "num_red" => $_POST["trainnum_red"],
       "type" => $_POST["traintype"],
       "direction1" => $_POST["direction1"],
       "direction2" => $_POST["direction2"],
@@ -72,12 +73,11 @@ if (isset($_POST)) {
     ];
     $encoded = json_encode($dict, JSON_UNESCAPED_UNICODE);
     file_put_contents("content.json", $encoded);
-    exec("../sw/control.py set_positions --file=content.json ".$DEVICE." ".$_POST["side"], $output, $code);
+    exec("../sw/control.py set_positions --file=content.json ".$DEVICE." ".$_POST["side"], $output, $retval);
 
   } else if ($_POST["submit"] == "Reset") {
-    exec("../sw/control.py reset ".$DEVICE." ".$_POST["side"], $output, $code);
+    exec("../sw/control.py reset ".$DEVICE." ".$_POST["side"], $output, $retval);
   }
-
 }
 ?>
 
