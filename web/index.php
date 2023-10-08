@@ -61,18 +61,19 @@ $SIDES = array('A', 'B');
 
 $DEVICE = "/dev/ttyAMA0";
 
-if (isset($_POST)) {
+if (isset($_POST["submit"])) {
   $output = null;
   $retval = null;
 
   if ($_POST["submit"] == "Odeslat do tabule") {
     $dict = [
       "num" => $_POST["trainnum"],
-      "num_red" => $_POST["trainnum_red"],
       "type" => $_POST["traintype"],
       "final" => $_POST["final"],
       "delay" => $_POST["delay"],
     ];
+    if (isset($_POST['trainnum_red']))
+      $dict['num_red'] = $_POST['trainnum_red'];
     if (isset($_POST['direction1']) && ($_POST['direction1'] != ''))
       $dict['direction1'] = $_POST['direction1'];
     if (isset($_POST['direction2']) && ($_POST['direction2'] != ''))
@@ -97,7 +98,7 @@ if (isset($_POST)) {
   <hr>
   <form action="index.php" method="post">
     <label for="trainnum">Číslo vlaku:</label> <br>
-    <input type="number" name="trainnum" max="99999" value="<?php echo $_POST['trainnum']; ?>">
+    <input type="number" name="trainnum" max="99999" value="<?php if (isset($_POST['trainnum'])) echo $_POST['trainnum']; ?>">
 
     <input type="checkbox" name="trainnum_red" <?php if (isset($_POST['trainnum_red']) && $_POST['trainnum_red']) { echo 'checked'; } ?>>
     <label for="trainnum_red">Zobrazit číslo vlaku červeně</label><br>
@@ -106,7 +107,7 @@ if (isset($_POST)) {
     <select name="traintype">
     <?php
     foreach($TRAINTYPES as $type) {
-        if($type == $_POST["traintype"]) {
+        if ((isset($_POST["traintype"])) && ($type == $_POST["traintype"])) {
             echo '<option selected="selected">'.$type.'</option>';
         } else {
             echo '<option>'.$type.'</option>';
@@ -117,16 +118,16 @@ if (isset($_POST)) {
 
 
     <label for="final">Cílová stanice (max 14 znaků):</label> <br>
-    <input type="text" name="final" maxlength="14" value="<?php echo $_POST['final']; ?>"> <br>
+    <input type="text" name="final" maxlength="14" value="<?php if (isset($_POST['final'])) echo $_POST['final']; ?>"> <br>
 
     <label for="time">Čas odjezdu:</label> <br>
-    <input type="time" name="time" value="<?php echo $_POST['time']; ?>"> <br>
+    <input type="time" name="time" value="<?php if (isset($_POST['time'])) echo $_POST['time']; ?>"> <br>
 
     <label for="direction1">Směr 1:</label> <br>
     <select name="direction1">
     <?php
     foreach($DIR1 as $dir) {
-        if($dir == $_POST["direction1"]) {
+        if ((isset($_POST["direction1"])) && ($dir == $_POST["direction1"])) {
             echo '<option selected="selected">'.$dir.'</option>';
         } else {
             echo '<option>'.$dir.'</option>';
@@ -139,7 +140,7 @@ if (isset($_POST)) {
     <select name="direction2" value="">
     <?php
     foreach($DIR2 as $dir) {
-        if($dir == $_POST["direction2"]) {
+        if ((isset($_POST["direction2"])) &&($dir == $_POST["direction2"])) {
             echo '<option selected="selected">'.$dir.'</option>';
         } else {
             echo '<option>'.$dir.'</option>';
@@ -152,7 +153,7 @@ if (isset($_POST)) {
     <select name="delay">
     <?php
     foreach($DELAYS as $delay) {
-        if($delay == $_POST["delay"]) {
+        if ((isset($_POST["delay"])) && ($delay == $_POST["delay"])) {
             echo '<option value="'.$delay.'" selected="selected">'.$delay.'</option>';
         } else {
             echo '<option value="'.$delay.'">'.$delay.'</option>';
