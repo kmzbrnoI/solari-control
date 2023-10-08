@@ -7,10 +7,13 @@
 </head>
 
 <?php
+setlocale(LC_ALL, 'cs_CZ');
+
 $TRAINTYPES = array('Ec', 'Ic', 'Ex R', 'Ex lůžkový', 'Ex', 'R R', 'R lůžkový',
 'R', 'Sp', 'Os', 'Mim. Ex', 'Mim. R', 'Mim. Sp', 'Mim. Os', 'Zvláštní vlak',
-'Special train', 'Parní vlak', 'Steam train', 'IR', 'ICE', 'Sc', 'TGV', '', 'Ic
-bílá', 'Sp');
+'Special train', 'Parní vlak', 'Steam train', 'IR', 'ICE', 'Sc', 'TGV', 'Ic
+bílá');
+sort($TRAINTYPES, SORT_LOCALE_STRING);
 
 $DIR1 = array(
     'Adamov', 'Adamov-Blansko', 'Bylnice', 'Blansko', 'Blažovice', 'Bohumín',
@@ -24,10 +27,11 @@ $DIR1 = array(
     'Přerov-Bohumín', 'Prostějov hl.n.', 'Prostějov-Olomouc', 'Rajhrad',
     'Rousínov', 'Šakvice', 'Skalice nad Svitavou', 'Sokolnice-Teln.', 'Střelice',
     'Studenec', 'Studénka', 'Tišnov', 'Veselí nad Moravou', 'Vranovice',
-    'Vyškov na Moravě', 'Zastávka u Brna', 'Žďár nad Sázavou', '?', 'Studenec',
+    'Vyškov na Moravě', 'Zastávka u Brna', 'Žďár nad Sázavou', 'Studenec',
     'Štúrovo', 'Svitavy', 'Tábor', 'Tišnov', 'Tišnov-Křižanov', 'Trenč. Teplá',
-    'Turnov', 'Uherské Hradiště', '?'
+    'Turnov', 'Uherské Hradiště', ''
 );
+sort($DIR1, SORT_LOCALE_STRING);
 
 $DIR2 = array(
     'Blansko', 'Bohumín', 'Bojkovice', 'Břeclav', 'Bratislava', 'Bylnice',
@@ -42,9 +46,10 @@ $DIR2 = array(
     'S5', 'S6', 'S7', 'R1', 'R2', 'R3', 'R4', 'R41', 'R5', 'R6', 'R7', 'Uničov',
     'Ústí nad Labem', 'Valašské Meziřící', 'Veselí nad Lužnicí', 'Veseá nad Moravou',
     'Vyškov na Moravě', 'Zábřeh na Moravě', 'Zaječí', 'Žďár nad Sázavou', 'Žilina',
-    'Kojetín', 'Vlárský Průsmyk', 'Tábor-Veselí nad Lužnicí', '', 'Praha hl.n.',
-    '', 'ODKLON'
+    'Kojetín', 'Vlárský Průsmyk', 'Tábor-Veselí nad Lužnicí', 'Praha hl.n.',
+    'ODKLON', ''
 );
+sort($DIR2, SORT_LOCALE_STRING);
 
 $DELAYS = array(
     0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80, 90, 100, 110,
@@ -60,23 +65,29 @@ if (isset($_POST)) {
   $output = null;
   $retval = null;
 
-  if ($_POST["submit"] == "Zobrazit") {
+  if ($_POST["submit"] == "Odeslat do tabule") {
     $dict = [
       "num" => $_POST["trainnum"],
       "num_red" => $_POST["trainnum_red"],
       "type" => $_POST["traintype"],
-      "direction1" => $_POST["direction1"],
-      "direction2" => $_POST["direction2"],
       "final" => $_POST["final"],
-      "time" => $_POST["time"],
       "delay" => $_POST["delay"],
     ];
+    if (isset($_POST['direction1']) && ($_POST['direction1'] != ''))
+      $dict['direction1'] = $_POST['direction1'];
+    if (isset($_POST['direction2']) && ($_POST['direction2'] != ''))
+      $dict['direction2'] = $_POST['direction2'];
+    if (isset($_POST['time']) && ($_POST['time'] != '--:--') && ($_POST['time'] != ''))
+      $dict['time'] = $_POST['time'];
+
+    //print_r($dict);
+
     $encoded = json_encode($dict, JSON_UNESCAPED_UNICODE);
     file_put_contents("content.json", $encoded);
-    exec("../sw/control.py set_positions --file=content.json ".$DEVICE." ".$_POST["side"], $output, $retval);
+    exec("../sw/control.py set_positions --file=content.json ".$DEVICE." ".$_POST["side"]." 2>&1", $output, $retval);
 
-  } else if ($_POST["submit"] == "Reset") {
-    exec("../sw/control.py reset ".$DEVICE." ".$_POST["side"], $output, $retval);
+  } else if ($_POST["submit"] == "Smazat tabuli") {
+    exec("../sw/control.py reset ".$DEVICE." ".$_POST["side"]." 2>&1", $output, $retval);
   }
 }
 ?>
@@ -88,7 +99,7 @@ if (isset($_POST)) {
     <label for="trainnum">Číslo vlaku:</label> <br>
     <input type="number" name="trainnum" max="99999" value="<?php echo $_POST['trainnum']; ?>">
 
-    <input type="checkbox" name="trainnum_red" <?php if ($_POST['trainnum_red']) { echo 'checked'; } ?>>
+    <input type="checkbox" name="trainnum_red" <?php if (isset($_POST['trainnum_red']) && $_POST['trainnum_red']) { echo 'checked'; } ?>>
     <label for="trainnum_red">Zobrazit číslo vlaku červeně</label><br>
 
     <label for="traintype">Typ vlaku:</label><br>
@@ -111,7 +122,7 @@ if (isset($_POST)) {
     <label for="time">Čas odjezdu:</label> <br>
     <input type="time" name="time" value="<?php echo $_POST['time']; ?>"> <br>
 
-    <label for="direction1">Přes 1:</label> <br>
+    <label for="direction1">Směr 1:</label> <br>
     <select name="direction1">
     <?php
     foreach($DIR1 as $dir) {
@@ -124,7 +135,7 @@ if (isset($_POST)) {
     ?>
     </select> <br>
 
-    <label for="direction2">Přes 2:</label> <br>
+    <label for="direction2">Směr 2:</label> <br>
     <select name="direction2" value="">
     <?php
     foreach($DIR2 as $dir) {
@@ -137,14 +148,14 @@ if (isset($_POST)) {
     ?>
     </select> <br>
 
-    <label for="delay">Zpoždění:</label><br>
+    <label for="delay">Zpoždění (minut):</label><br>
     <select name="delay">
     <?php
     foreach($DELAYS as $delay) {
         if($delay == $_POST["delay"]) {
-            echo '<option value="'.$delay.'" selected="selected">'.$delay.' minut</option>';
+            echo '<option value="'.$delay.'" selected="selected">'.$delay.'</option>';
         } else {
-            echo '<option value="'.$delay.'">'.$delay.' minut</option>';
+            echo '<option value="'.$delay.'">'.$delay.'</option>';
         }
     }
     ?>
@@ -152,27 +163,24 @@ if (isset($_POST)) {
 
     <label for="side">Strana:</label><br>
     <select name="side">
-    <?php
-    foreach($SIDES as $side) {
-        if($side == $_POST["side"]) {
-            echo '<option selected="selected">'.$side.'</option>';
-        } else {
-            echo '<option>'.$side.'</option>';
-        }
-    }
-    ?>
+      <option value="A" selected="selected">Přední</option>
+      <option value="B">Zadní</option>
     </select> <br>
 
-
     <br>
-    <input type="submit" name="submit" value="Zobrazit">
-    <input type="submit" name="submit" value="Reset"> <br>
-
-    <pre>
-    <?php
-    print_r($output);
-    ?>
-    </pre>
+    <input type="submit" name="submit" value="Odeslat do tabule">
+    <input type="submit" name="submit" value="Smazat tabuli"> <br>
   </form>
+
+  <?php
+  if (isset($output)) {
+    echo '<br><hr>';
+    echo 'Výstup control.py:<br>';
+    echo '<pre>';
+    echo(implode("\n", $output));
+    echo '</pre>';
+  }
+  ?>
+
 </body>
 </html>
