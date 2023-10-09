@@ -122,9 +122,9 @@ def send(sport, msgtype: int, data: List[int]) -> None:
 
 
 def side_str(_side: int) -> str:
-    if (_side&1) == 0:
+    if (_side & 1) == 0:
         return 'A'
-    elif (_side&1) == 1:
+    elif (_side & 1) == 1:
         return 'B'
     else:
         return '?'
@@ -148,7 +148,7 @@ def parse(data: List[int], program) -> None:
     logging.debug(f'> Received: {data}')
 
     if data[2] == UART_MSG_SM_POS:
-        if args['<side>'] is None or (data[3]&1) == args['<side>']:
+        if args['<side>'] is None or (data[3] & 1) == args['<side>']:
             if args['--pos']:
                 logging.info(f'Side: {side_str(data[3])} Positions: {data[4:-1]}')
             positions = data[4:-1]
@@ -157,14 +157,14 @@ def parse(data: List[int], program) -> None:
                 program.received_positions(positions)
 
     elif data[2] == UART_MSG_SM_TARGET:
-        if args['<side>'] is None or (data[3]&1) == args['<side>']:
+        if args['<side>'] is None or (data[3] & 1) == args['<side>']:
             if args['--target']:
                 logging.info(f'Side: {side_str(data[3])} Target: {data[4:-1]}')
             if getattr(program, 'received_target', None):
                 program.received_target(data[4:-1])
 
     elif data[2] == UART_MSG_SM_SENS:
-        if args['<side>'] is None or (data[3]&1) == args['<side>']:
+        if args['<side>'] is None or (data[3] & 1) == args['<side>']:
             if args['--sens']:
                 logging.info(f'Side: {side_str(data[3])} Sensors: ' +
                              (' '.join([f'{byte:#010b}' for byte in data[4:-1]])))
@@ -227,7 +227,7 @@ def flap_all_positions(content: Dict) -> List[int]:  # always returns list of le
     result += [hours+1] if hours != 0xFF else [0]
     result += [(minutes//10)+1] if minutes != 0xFF else [0]
     result += final[2:10]  # 0x10-0x17
-    result += [(minutes%10)+1] if minutes != 0xFF else [0]
+    result += [(minutes % 10) + 1] if minutes != 0xFF else [0]
     result += [flap_delay(content['delay'])] if 'delay' in content else [0]
 
     assert len(result) == FLAP_UNITS
@@ -276,7 +276,7 @@ class Flap:
     def received_positions(self, positions: List[int]) -> None:
         if all([pos != 0xFF for pos in positions]) and not self.sent:
             logging.info('Sending flap...')
-            send(self.sport, UART_MSG_MS_FLAP, [agrs['<side>'], int(args['<flapid>'])])
+            send(self.sport, UART_MSG_MS_FLAP, [args['<side>'], int(args['<flapid>'])])
             self.sent = True
 
     def received_target(self, target: List[int]) -> None:
