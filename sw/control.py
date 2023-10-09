@@ -180,6 +180,8 @@ def flap_number(num: int, length: int) -> List[int]:  # always returns list of l
 
 
 def flap_final(final: str) -> List[int]:  # always returns list of length FLAP_FINAL_LEN
+    for letter in final.lower():
+        assert letter in FLAP_ALPHABET, f'Letter "{letter}" is not available!'
     return [FLAP_ALPHABET.index(char) for char in final.lower().ljust(FLAP_FINAL_LEN, ' ')]
 
 
