@@ -49,7 +49,7 @@ UART_MSG_SM_TARGET = 0x03
 RECEIVE_TIMEOUT = datetime.timedelta(milliseconds=200)
 
 FLAP_UNITS = 26
-FLAP_ALPHABET = " 0123456789aáäbcčdďeéěfghiíjklmnňoóöpqrřsštťuúůüvwxyýzž/.()"
+FLAP_ALPHABET = " 0123456789aáäbcčdďeéěfghiíjklmnňoóöpqrřsštťuúůüvwxyýzž/.-()"
 FLAP_FINAL_LEN = 14
 FLAP_TRAINNUM_COUNT = 5
 
