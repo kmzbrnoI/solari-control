@@ -27,8 +27,8 @@ $DIR1 = array(
     'Přerov-Bohumín', 'Prostějov hl.n.', 'Prostějov-Olomouc', 'Rajhrad',
     'Rousínov', 'Šakvice', 'Skalice nad Svitavou', 'Sokolnice-Teln.', 'Střelice',
     'Studenec', 'Studénka', 'Tišnov', 'Veselí nad Moravou', 'Vranovice',
-    'Vyškov na Moravě', 'Zastávka u Brna', 'Žďár nad Sázavou', 'Studenec',
-    'Štúrovo', 'Svitavy', 'Tábor', 'Tišnov', 'Tišnov-Křižanov', 'Trenč. Teplá',
+    'Vyškov na Moravě', 'Zastávka u Brna', 'Žďár nad Sázavou',
+    'Štúrovo', 'Svitavy', 'Tábor', 'Tišnov-Křižanov', 'Trenč. Teplá',
     'Turnov', 'Uherské Hradiště', ''
 );
 sort($DIR1, SORT_LOCALE_STRING);
