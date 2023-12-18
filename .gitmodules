@@ -1,0 +1,3 @@
+[submodule "hjop/ac"]
+	path = hjop/ac
+	url = https://github.com/kmzbrnoI/ac-python
