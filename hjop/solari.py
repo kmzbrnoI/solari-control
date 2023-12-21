@@ -18,19 +18,17 @@ Options:
 import sys
 import logging
 from docopt import docopt  # type: ignore
-from typing import List, Dict
+from typing import Dict
 import subprocess
 import json
-import datetime
 
 import ac.blocks
 import ac.panel_client as panel_client
 import ac.events as events
 from ac import pt as pt
-import utils.blocks
 
 DEVICE = '/dev/ttyAMA0'
-SIDE = 'B'
+SIDES = ['A', 'B']
 
 TYPES = {
     'Ec': 'Ec',
@@ -46,18 +44,26 @@ TYPES = {
 
 def show_train(train: Dict) -> bool:
     global track_id
-    logging.info(f'Showing train {train["name"]} ...')
+    logging.info(f'Showing train {train} ...')
 
+    if not train.get('announcement', False):
+        return False
     if train['type'] not in TYPES:
         return False
 
     content = {
         'num': train['name'],
         'type': TYPES[train['type']],
+        'num_red': train['type'] in ['Ec', 'Ic', 'Ex', 'R'],
+        'direction2': 'S3',
     }
 
     if 'areaTo' in train:
         content['final'] = pt.get(f'/areas/{train["areaTo"]}')['area']['name']
+
+    if content['final'] == 'Odbočka Čejč':
+        content['final'] = 'Brno hlavní n.'
+        content['direction1'] = 'Vranovice'
 
     podj_time = train.get('podj', {}).get(str(track_id), {}).get('absolute', None)
     if podj_time is not None:
@@ -67,28 +73,40 @@ def show_train(train: Dict) -> bool:
         content['time'] = f'{hours}:{minutes}'
 
     with open('content.json', 'w') as file:
-        file.write(json.dumps(content, indent='\t'))
+        file.write(json.dumps(content, indent='\t', ensure_ascii=False))
 
-    _stdout = subprocess.run(['../sw/control.py', 'set_positions', '--file=content.json', DEVICE, SIDE])
-    logging.info(_stdout)
+    for side in SIDES:
+        result = subprocess.run(
+            ['../sw/control.py', 'set_positions', '--file=content.json', DEVICE, side]
+        )
+        if result.returncode != 0:
+            logging.error('control.py returned nonzero status!')
+            return False
     return True
 
 
 def clear() -> None:
     logging.info('Resetting...')
-    _stdout = subprocess.run(['../sw/control.py', 'reset', DEVICE, SIDE])
-    logging.info(_stdout)
+    for side in SIDES:
+        subprocess.run(['../sw/control.py', 'reset', DEVICE, side])
 
 
 def on_track_change(block) -> None:
     trains = block['blockState'].get('trains', [])
     predict = block['blockState'].get('trainPredict', '')
-    shown = False
+    train = None
+
     if trains:
-        if not show_train(pt.get(f'/trains/{trains[0]}')['train']):
-            clear()
+        train = pt.get(f'/trains/{trains[0]}')['train']
     elif predict != '':
-        if not show_train(pt.get(f'/trains/{predict}')['train']):
+        train = pt.get(f'/trains/{predict}')['train']
+
+    if train is not None:
+        ok = show_train(train)
+        if ok:
+            logging.info('Done')
+        else:
+            logging.info('show_train returned False!')
             clear()
     else:
         clear()
