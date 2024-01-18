@@ -25,6 +25,7 @@ import json
 import ac.blocks
 import ac.panel_client as panel_client
 import ac.events as events
+import utils.blocks
 from ac import pt as pt
 
 DEVICE = '/dev/ttyAMA0'
@@ -40,6 +41,8 @@ TYPES = {
     'MOs': 'Os',
     'Zvl': 'Zvláštní vlak',
 }
+
+ENABLE_BLOCK_ID = 5001
 
 
 def show_train(train: Dict) -> bool:
@@ -91,9 +94,20 @@ def clear() -> None:
         subprocess.run(['../sw/control.py', 'reset', DEVICE, side])
 
 
+def on_enable_change(block) -> None:
+    global track_id
+    on_track_change(utils.blocks.state(track_id))
+
+
 def on_track_change(block) -> None:
-    trains = block['blockState'].get('trains', [])
-    predict = block['blockState'].get('trainPredict', '')
+    if not utils.blocks.state(ENABLE_BLOCK_ID).get('activeOutput', False):
+        logging.info('on_track_change: enable block disabled.')
+        return
+
+    if 'blockState' in block:
+        block = block['blockState']
+    trains = block.get('trains', [])
+    predict = block.get('trainPredict', '')
     train = None
 
     if trains:
@@ -117,6 +131,7 @@ def on_connect():
     global track_id
     track_id = int(args['<track_id>'])
     ac.blocks.register_change(on_track_change, track_id)
+    ac.blocks.register_change(on_enable_change, ENABLE_BLOCK_ID)
     on_track_change(pt.get(f'/blocks/{track_id}?state=true')['block'])
     logging.info('Startup sequence finished')
 
