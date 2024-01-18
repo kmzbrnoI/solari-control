@@ -54,8 +54,10 @@ def show_train(train: Dict) -> bool:
     if train['type'] not in TYPES:
         return False
 
+    trainnum = int(train['name'][-5:])
+
     content = {
-        'num': train['name'],
+        'num': trainnum,
         'type': TYPES[train['type']],
         'num_red': train['type'] in ['Ec', 'Ic', 'Ex', 'R'],
         'direction2': 'S3',
