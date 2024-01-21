@@ -8,6 +8,7 @@ Usage:
     control.py reset [options] [-w|--wait] <device> <side>
     control.py flap [options] <device> <flapid> <side>
     control.py loop [options] <device> [<side>]
+    control.py state [options] [--file=<filename.json>] <device> <side>
     control.py (-h | --help)
     control.py --version
 
@@ -119,6 +120,12 @@ def send(sport, msgtype: int, data: List[int]) -> None:
 
     logging.debug(f'< Send: {_data}')
     sport.write(_data)
+
+
+def flap_str(lst: List[str], i: int) -> str:
+    if i == 0xFF:
+        return '?'
+    return lst[i-1] if i > 0 and i <= len(lst) else ''
 
 
 def side_str(_side: int) -> str:
@@ -236,6 +243,69 @@ def flap_all_positions(content: Dict) -> List[int]:  # always returns list of le
     return result
 
 
+def explain_positions(data: List[int]) -> Dict:
+    assert len(data) >= FLAP_UNITS
+    if len(data) > FLAP_UNITS:
+        logging.warning(f'{len(data)} bytes of positions received, however {FLAP_UNITS} expected!')
+    result = {}
+    result['raw'] = {}
+
+    result['type'] = flap_str(FLAP_TYPES, data[0])
+    result['raw']['type'] = data[0]
+
+    num_data = data[1:6]
+    trainnum = 0
+    for i, numeral in enumerate(num_data):
+        if numeral == 0:
+            numeral = 1
+        trainnum += (10**i) * ((numeral-1) % 10)
+    if any(num > 0 for num in num_data):
+        result['num'] = trainnum
+        result['num_red'] = any(num > 10 for num in num_data)
+
+    result['raw']['num'] = num_data
+
+    result['direction1'] = flap_str(FLAP_DIRECTIONS_1, data[12])
+    result['raw']['direction1'] = data[12]
+    result['direction2'] = flap_str(FLAP_DIRECTIONS_2, data[13])
+    result['raw']['direction2'] = data[13]
+
+    delay = data[25]
+    if delay == 0xFF:
+        result['delay'] = '?'
+    elif delay > 0:
+        delay_i = delay-1
+        if delay_i < len(FLAP_DELAYS_MIN):
+            minutes = FLAP_DELAYS_MIN[delay_i]
+            result['delay'] = f'{minutes/60}:{str(minutes%60).zfill(2)}'
+        elif delay_i < len(FLAP_DELAYS_MIN) + len(FLAP_DELAYS_NEXT):
+            result['delay'] = FLAP_DELAYS_NEXT[delay_i-len(FLAP_DELAYS_MIN)]
+        else:
+            result['delay'] = ''
+    else:
+        result['delay'] = ''
+    result['raw']['delay'] = delay
+
+    hours, minutes_tenths, minutes_ones = data[14], data[15], data[24]
+    if hours > 24 or minutes_tenths > 10 or minutes_ones > 10:
+        result['time'] = '?'
+    elif hours == 0 or minutes_tenths == 0 or minutes_ones == 0:
+        result['time'] = ''
+    else:
+        minutes = (minutes_tenths-1)*10 + (minutes_ones-1)
+        result['time'] = f'{hours-1}:{str(minutes).zfill(2)}'
+    result['raw']['time'] = {}
+    result['raw']['time']['minutes_ones'] = minutes_ones
+    result['raw']['time']['minutes_tenths'] = minutes_tenths
+    result['raw']['time']['hours'] = hours
+
+    final = data[6:8] + data[16:24] + data[8:12]
+    result['final'] = ''.join(flap_str(FLAP_ALPHABET, min(f+1, 0xFF)) for f in final)
+    result['raw']['final'] = final
+
+    return result
+
+
 ###############################################################################
 # Subprograms
 
@@ -292,6 +362,38 @@ class Loop:
         pass
 
 
+class State:
+    def __init__(self, sport):
+        self.sport = sport
+        self.received = {}
+        logging.info('Waiting for positions...')
+
+    def dump_and_exit(self) -> None:
+        content = json.dumps(self.received, ensure_ascii=False, indent='    ')
+        if args['--file']:
+            with open(args['--file'], 'w') as f:
+                f.write(content)
+        else:
+            print(content)
+
+        sys.exit(0)
+
+    def received_positions(self, positions: List[int]) -> None:
+        logging.info('Positions received.')
+        self.received['current'] = explain_positions(positions)
+
+        if 'target' in self.received:
+            self.dump_and_exit()
+        else:
+            send(self.sport, UART_MSG_MS_GET_TARGET, [])
+
+    def received_target(self, target: List[int]) -> None:
+        self.received['target'] = explain_positions(target)
+        logging.info('Target received.')
+        if 'current' in self.received:
+            self.dump_and_exit()
+
+
 ###############################################################################
 # Main
 
@@ -317,14 +419,20 @@ if __name__ == '__main__':
     sport = serial.Serial(args['<device>'], 115200)
     logging.debug(f'Connected to {args["<device>"]}')
 
-    if args['set_positions'] or args['reset']:
-        program = SetPositions(sport)
-    elif args['flap']:
-        program = Flap(sport)
-    elif args['loop']:
-        program = Loop(sport)
-    else:
-        assert False, 'Unknown program'
+    PROGRAMS = {
+        'set_positions': SetPositions,
+        'reset': SetPositions,
+        'flap': Flap,
+        'loop': Loop,
+        'state': State,
+    }
+
+    program = None
+    for name, inst in PROGRAMS.items():
+        if args[name]:
+            program = inst(sport)
+            break
+    assert program is not None, 'Unknown program'
 
     receive_buf = []
     last_receive_time = datetime.datetime.now()
