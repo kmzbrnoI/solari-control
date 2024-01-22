@@ -159,16 +159,18 @@ def parse(data: List[int], program) -> None:
             if args['--pos']:
                 logging.info(f'Side: {side_str(data[3])} Positions: {data[4:-1]}')
             positions = data[4:-1]
+            side = data[3] & 1
+            target_reached = bool((data[3] >> 1) & 1)
             assert len(positions) == FLAP_UNITS
             if getattr(program, 'received_positions', None):
-                program.received_positions(positions)
+                program.received_positions(positions, side, target_reached)
 
     elif data[2] == UART_MSG_SM_TARGET:
         if args['<side>'] is None or (data[3] & 1) == args['<side>']:
             if args['--target']:
                 logging.info(f'Side: {side_str(data[3])} Target: {data[4:-1]}')
             if getattr(program, 'received_target', None):
-                program.received_target(data[4:-1])
+                program.received_target(data[4:-1], data[3])
 
     elif data[2] == UART_MSG_SM_SENS:
         if args['<side>'] is None or (data[3] & 1) == args['<side>']:
@@ -258,7 +260,7 @@ def explain_positions(data: List[int]) -> Dict:
     for i, numeral in enumerate(num_data):
         if numeral == 0:
             numeral = 1
-        trainnum += (10**i) * ((numeral-1) % 10)
+        trainnum += (10**(len(num_data)-i-1)) * ((numeral-1) % 10)
     if any(num > 0 for num in num_data):
         result['num'] = trainnum
         result['num_red'] = any(num > 10 for num in num_data)
@@ -277,7 +279,7 @@ def explain_positions(data: List[int]) -> Dict:
         delay_i = delay-1
         if delay_i < len(FLAP_DELAYS_MIN):
             minutes = FLAP_DELAYS_MIN[delay_i]
-            result['delay'] = f'{minutes/60}:{str(minutes%60).zfill(2)}'
+            result['delay'] = f'{minutes//60}:{str(minutes%60).zfill(2)}'
         elif delay_i < len(FLAP_DELAYS_MIN) + len(FLAP_DELAYS_NEXT):
             result['delay'] = FLAP_DELAYS_NEXT[delay_i-len(FLAP_DELAYS_MIN)]
         else:
@@ -322,7 +324,7 @@ class SetPositions:
         elif args['set_positions']:
             self.content = json.loads(input())
 
-    def received_positions(self, positions: List[int]) -> None:
+    def received_positions(self, positions: List[int], side: int, target_reached: bool) -> None:
         if not self.positions_sent and all([pos != 0xFF for pos in positions]):
             self.positions_sent = True
             self.sent_positions = flap_all_positions(self.content)
@@ -345,14 +347,14 @@ class Flap:
         self.sent = False
         logging.info('Waiting for device initialized...')
 
-    def received_positions(self, positions: List[int]) -> None:
-        if all([pos != 0xFF for pos in positions]) and not self.sent:
+    def received_positions(self, positions: List[int], side: int, target_reached: bool) -> None:
+        if all([pos != 0xFF for pos in positions]) and not self.sent and side == args['<side>']:
             logging.info('Sending flap...')
             send(self.sport, UART_MSG_MS_FLAP, [args['<side>'], int(args['<flapid>'])])
             self.sent = True
 
-    def received_target(self, target: List[int]) -> None:
-        if self.sent:
+    def received_target(self, target: List[int], side: int) -> None:
+        if self.sent and side == args['<side>']:
             logging.info('Flap sent.')
             sys.exit(0)
 
@@ -378,20 +380,25 @@ class State:
 
         sys.exit(0)
 
-    def received_positions(self, positions: List[int]) -> None:
+    def received_positions(self, positions: List[int], side: int, target_reached: bool) -> None:
         logging.info('Positions received.')
-        self.received['current'] = explain_positions(positions)
+        if side == args['<side>']:
+            self.received['current'] = explain_positions(positions)
+            self.received['current']['side'] = side
+            self.received['current']['target_reached'] = target_reached
 
-        if 'target' in self.received:
-            self.dump_and_exit()
-        else:
-            send(self.sport, UART_MSG_MS_GET_TARGET, [])
+            if 'target' in self.received:
+                self.dump_and_exit()
+            else:
+                send(self.sport, UART_MSG_MS_GET_TARGET, [])
 
-    def received_target(self, target: List[int]) -> None:
-        self.received['target'] = explain_positions(target)
-        logging.info('Target received.')
-        if 'current' in self.received:
-            self.dump_and_exit()
+    def received_target(self, target: List[int], side: int) -> None:
+        if side == args['<side>']:
+            self.received['target'] = explain_positions(target)
+            self.received['target']['side'] = side
+            logging.info('Target received.')
+            if 'current' in self.received:
+                self.dump_and_exit()
 
 
 ###############################################################################
