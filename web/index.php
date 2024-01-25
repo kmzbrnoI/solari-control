@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="robots" content="noindex,nofollow">
+  <link rel="stylesheet" href="style.css">
   <title>Nástupištní tabule Solari di Udine</title>
 </head>
 
