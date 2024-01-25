@@ -14,9 +14,9 @@ Usage:
 
 Options:
   -l <loglevel>     Specify loglevel (python logging package) [default: info]
-  -p --pos          Print received positions
-  -s --sens         Print received sensors
-  -t --target       Print received target
+  -p --pos          Print received positions as bytes
+  -s --sens         Print received sensor status as bits
+  -t --target       Print received target as bytes
 
 Side: A/B
 
@@ -154,31 +154,40 @@ def parse(data: List[int], program) -> None:
 
     logging.debug(f'> Received: {data}')
 
+    if len(data) < 5:
+        logging.warning('Data too short!')
+        return
+
     if data[2] == UART_MSG_SM_POS:
-        if args['<side>'] is None or (data[3] & 1) == args['<side>']:
+        side = data[3] & 1
+        target_reached = bool((data[3] >> 1) & 1)
+        positions = data[4:-1]
+        assert len(positions) == FLAP_UNITS, f'{len(positions)} != {FLAP_UNITS}'
+        if args['<side>'] is None or side == args['<side>']:
             if args['--pos']:
-                logging.info(f'Side: {side_str(data[3])} Positions: {data[4:-1]}')
-            positions = data[4:-1]
-            side = data[3] & 1
-            target_reached = bool((data[3] >> 1) & 1)
-            assert len(positions) == FLAP_UNITS
+                logging.info(f'Side: {side_str(side)} Positions: {positions}')
             if getattr(program, 'received_positions', None):
                 program.received_positions(positions, side, target_reached)
 
     elif data[2] == UART_MSG_SM_TARGET:
-        if args['<side>'] is None or (data[3] & 1) == args['<side>']:
+        side = data[3] & 1
+        target = data[4:-1]
+        assert len(target) == FLAP_UNITS, f'{len(target)} != {FLAP_UNITS}'
+        if args['<side>'] is None or side == args['<side>']:
             if args['--target']:
-                logging.info(f'Side: {side_str(data[3])} Target: {data[4:-1]}')
+                logging.info(f'Side: {side_str(side)} Target: {target}')
             if getattr(program, 'received_target', None):
-                program.received_target(data[4:-1], data[3])
+                program.received_target(target, side)
 
     elif data[2] == UART_MSG_SM_SENS:
-        if args['<side>'] is None or (data[3] & 1) == args['<side>']:
+        side = data[3] & 1
+        sensors = data[4:-1]
+        if args['<side>'] is None or side == args['<side>']:
             if args['--sens']:
-                logging.info(f'Side: {side_str(data[3])} Sensors: ' +
-                             (' '.join([f'{byte:#010b}' for byte in data[4:-1]])))
+                logging.info(f'Side: {side_str(side)} Sensors: ' +
+                             (' '.join([f'{byte:#010b}' for byte in sensors])))
             if getattr(program, 'received_sensors', None):
-                program.received_sensors(data[4:-1])
+                program.received_sensors(sensors, side)
 
 
 def flap_number(num: int, length: int) -> List[int]:  # always returns list of length `length`
@@ -348,13 +357,13 @@ class Flap:
         logging.info('Waiting for device initialized...')
 
     def received_positions(self, positions: List[int], side: int, target_reached: bool) -> None:
-        if all([pos != 0xFF for pos in positions]) and not self.sent and side == args['<side>']:
+        if all([pos != 0xFF for pos in positions]) and not self.sent:
             logging.info('Sending flap...')
             send(self.sport, UART_MSG_MS_FLAP, [args['<side>'], int(args['<flapid>'])])
             self.sent = True
 
     def received_target(self, target: List[int], side: int) -> None:
-        if self.sent and side == args['<side>']:
+        if self.sent:
             logging.info('Flap sent.')
             sys.exit(0)
 
@@ -393,12 +402,11 @@ class State:
                 send(self.sport, UART_MSG_MS_GET_TARGET, [])
 
     def received_target(self, target: List[int], side: int) -> None:
-        if side == args['<side>']:
-            self.received['target'] = explain_positions(target)
-            self.received['target']['side'] = side
-            logging.info('Target received.')
-            if 'current' in self.received:
-                self.dump_and_exit()
+        self.received['target'] = explain_positions(target)
+        self.received['target']['side'] = side
+        logging.info('Target received.')
+        if 'current' in self.received:
+            self.dump_and_exit()
 
 
 ###############################################################################
