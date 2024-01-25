@@ -168,6 +168,8 @@ def parse(data: List[int], program) -> None:
                 logging.info(f'Side: {side_str(side)} Positions: {positions}')
             if getattr(program, 'received_positions', None):
                 program.received_positions(positions, side, target_reached)
+        else:
+            logging.debug('Side mismatch')
 
     elif data[2] == UART_MSG_SM_TARGET:
         side = data[3] & 1
@@ -178,6 +180,8 @@ def parse(data: List[int], program) -> None:
                 logging.info(f'Side: {side_str(side)} Target: {target}')
             if getattr(program, 'received_target', None):
                 program.received_target(target, side)
+        else:
+            logging.debug('Side mismatch')
 
     elif data[2] == UART_MSG_SM_SENS:
         side = data[3] & 1
@@ -188,6 +192,8 @@ def parse(data: List[int], program) -> None:
                              (' '.join([f'{byte:#010b}' for byte in sensors])))
             if getattr(program, 'received_sensors', None):
                 program.received_sensors(sensors, side)
+        else:
+            logging.debug('Side mismatch')
 
 
 def flap_number(num: int, length: int) -> List[int]:  # always returns list of length `length`
