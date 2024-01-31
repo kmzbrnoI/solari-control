@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# edulint: flake8=--max-line-length=100
 
 """
 Solari di Udine platform board control script
@@ -50,7 +51,7 @@ UART_MSG_SM_TARGET = 0x03
 RECEIVE_TIMEOUT = datetime.timedelta(milliseconds=200)
 
 FLAP_UNITS = 26
-FLAP_ALPHABET = " 0123456789aáäbcčdďeéěfghiíjklmnňoóöpqrřsštťuúůüvwxyýzž/.-()"
+FLAP_ALPHABET = ' 0123456789aáäbcčdďeéěfghiíjklmnňoóöpqrřsštťuúůüvwxyýzž/.-()'
 FLAP_FINAL_LEN = 14
 FLAP_TRAINNUM_COUNT = 5
 
@@ -100,7 +101,7 @@ FLAP_DELAYS_MIN = [
 ]
 
 FLAP_DELAYS_NEXT = [
-    ">480", "VLAK NEJEDE", "BUS"
+    '>480', 'VLAK NEJEDE', 'BUS'
 ]
 
 
@@ -131,17 +132,16 @@ def flap_str(lst: List[str], i: int) -> str:
 def side_str(_side: int) -> str:
     if (_side & 1) == 0:
         return 'A'
-    elif (_side & 1) == 1:
+    if (_side & 1) == 1:
         return 'B'
-    else:
-        return '?'
+    return '?'
 
 
 def side_int(_side: str) -> int:
     _side = _side.lower()
     if _side == 'a':
         return 0
-    elif _side == 'b':
+    if _side == 'b':
         return 1
 
     assert False, 'Invalid side'
@@ -216,7 +216,7 @@ def flap_delay(delay: str) -> int:
     if ':' in delay:
         hours, minutes = map(int, delay.split(':'))
         minutes += hours*60
-    elif delay.isdigit():
+    elif delay.isdecimal():
         minutes = int(delay)
     else:
         assert False, 'Invalid delay'
