@@ -7,19 +7,24 @@
 #include "common.h"
 
 ///////////////////////////////////////////////////////////////////////////////
-// Variables
+// Public variables
 
 uint8_t flap_sens_reset[FLAP_SIDES][FLAP_BYTES];
 uint8_t flap_sens_moved[FLAP_SIDES][FLAP_BYTES];
 uint8_t flap_pos[FLAP_SIDES][FLAP_UNITS];
 uint8_t flap_counts[FLAP_SIDES][FLAP_UNITS];
 uint8_t flap_target_pos[FLAP_SIDES][FLAP_UNITS];
+bool flap_moved_changed;
+FlapSide flap_side;
+
+///////////////////////////////////////////////////////////////////////////////
+// Local variables
 
 uint8_t _last_moved_sens[FLAP_SIDES][FLAP_BYTES];
 bool _next_ip;
 uint8_t _active_out_timer;
-bool flap_moved_changed;
-FlapSide flap_side;
+uint8_t _flaps_since_incr[FLAP_SIDES][FLAP_UNITS];
+uint8_t _flaps_since_reset[FLAP_SIDES][FLAP_UNITS];
 
 ///////////////////////////////////////////////////////////////////////////////
 // Local functions prototypes
@@ -41,6 +46,8 @@ void flap_init(void) {
 		memset(flap_pos[i], 0xFF, FLAP_UNITS);
 		memset(flap_counts[i], 0xFF, FLAP_UNITS);
 		memset(flap_target_pos[i], 0, FLAP_UNITS);
+		memset(_flaps_since_incr[i], 0, FLAP_UNITS);
+		memset(_flaps_since_reset[i], 0, FLAP_UNITS);
 	}
 
 	for (uint8_t i = 0; i < FLAP_SIDES; i++) {
@@ -131,10 +138,16 @@ static void _update_moved(void) {
 		const bool current_reset = ((flap_sens_reset[flap_side][i/8] >> (i%8)) & 1);
 		const bool last_sens = ((_last_moved_sens[flap_side][i/8] >> (i%8)) & 1);
 
-		if ((current_sens != last_sens) && (flap_pos[flap_side][i] != 0xFF))
-			flap_pos[flap_side][i]++;
+		if (current_sens != last_sens) {
+			_flaps_since_incr[flap_side][i] = 0;
+			if (_flaps_since_reset[flap_side][i] < 0xFF)
+				_flaps_since_reset[flap_side][i]++;
+			if (flap_pos[flap_side][i] < 0xFF)
+				flap_pos[flap_side][i]++;
+		}
 		if (current_reset) {
-			if ((flap_pos[flap_side][i] != 0xFF) && (flap_pos[flap_side][i] != 0))
+			_flaps_since_reset[flap_side][i] = 0;
+			if ((flap_pos[flap_side][i] < 0xFF) && (flap_pos[flap_side][i] != 0))
 				flap_counts[flap_side][i] = flap_pos[flap_side][i];
 			flap_pos[flap_side][i] = 0;
 		}
@@ -153,6 +166,10 @@ void flap_set_all(FlapSide side, uint8_t pos[FLAP_UNITS]) {
 	if (side >= FLAP_SIDES)
 		fail();
 
+	// Clear error flags -> flap even with previously-errorneous units to allow resuming after unit repair
+	memset(_flaps_since_incr[side], 0, FLAP_UNITS);
+	memset(_flaps_since_reset[side], 0, FLAP_UNITS);
+
 	memcpy(flap_target_pos[side], pos, FLAP_UNITS);
 	for (uint8_t i = 0; i < FLAP_UNITS; i++)
 		if (flap_target_pos[side][i] >= flap_counts[side][i])
@@ -164,6 +181,10 @@ void flap_set_single(FlapSide side, uint8_t i, uint8_t pos) {
 		if (pos >= flap_counts[side][i])
 			pos = 0;
 		flap_target_pos[side][i] = pos;
+
+		// Clear error flags -> flap even with previously-errorneous units to allow resuming after unit repair
+		_flaps_since_incr[side][i] = 0;
+		_flaps_since_reset[side][i] = 0;
 	}
 }
 
@@ -171,23 +192,27 @@ void flap_single_clap() {
 	if (_flap_in_progress())
 		return;
 
-	if ((flap_target_reached(SideA)) && (flap_target_reached(SideB))) {
+	if ((flap_target_reached_ignore_errors(SideA)) && (flap_target_reached_ignore_errors(SideB))) {
 		if (flap_side != NoSide)
 			_set_side(NoSide);
 		return;
 	}
 
-	if ((flap_side == NoSide) || (flap_target_reached(flap_side))) {
-		_set_side(flap_target_reached(SideA) ? SideB : SideA);
+	if ((flap_side == NoSide) || (flap_target_reached_ignore_errors(flap_side))) {
+		_set_side(flap_target_reached_ignore_errors(SideA) ? SideB : SideA);
 		return; // flap next cycle
 	}
 
 	uint8_t to_flap[FLAP_BYTES];
 	memset(to_flap, 0, FLAP_BYTES);
 
-	for (uint8_t i = 0; i < FLAP_UNITS; i++)
-		if (flap_pos[flap_side][i] != flap_target_pos[flap_side][i])
+	for (uint8_t i = 0; i < FLAP_UNITS; i++) {
+		if (flap_pos[flap_side][i] != flap_target_pos[flap_side][i]) {
 			to_flap[i/8] |= (1 << (i%8));
+			if (_flaps_since_incr[flap_side][i] < 0xFF)
+				_flaps_since_incr[flap_side][i]++;
+		}
+	}
 
 	flap_flap(to_flap);
 }
@@ -215,4 +240,17 @@ bool flap_target_reached(FlapSide side) {
 		fail();
 
 	return (memcmp((char*)flap_pos[side], (char*)flap_target_pos[side], FLAP_UNITS) == 0);
+}
+
+bool flap_target_reached_ignore_errors(FlapSide side) {
+	if (side >= FLAP_SIDES)
+		fail();
+
+	for (uint8_t i = 0; i < FLAP_UNITS; i++) {
+		if ((flap_pos[side][i] != flap_target_pos[side][i]) &&
+		      (_flaps_since_incr[side][i] < FLAP_MAX_FLAPS_SINCE_INCR) &&
+		      (_flaps_since_reset[side][i] < FLAP_MAX_FLAPS_SINCE_RESET))
+			return false;
+	}
+	return true;
 }

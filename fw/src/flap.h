@@ -19,6 +19,8 @@
 #define FLAP_UNITS 26
 #define ACTIVE_OUT_MS 80 // max uint8_t
 #define FLAP_CLAP_PERIOD_MS 150
+#define FLAP_MAX_FLAPS_SINCE_INCR 5
+#define FLAP_MAX_FLAPS_SINCE_RESET 85
 
 typedef enum {
 	SideA = 0,
@@ -40,5 +42,6 @@ void flap_set_single(FlapSide side, uint8_t i, uint8_t pos);
 void flap_update_1ms(void);
 void flap_single_clap();
 bool flap_target_reached(FlapSide side);
+bool flap_target_reached_ignore_errors(FlapSide side);
 
 #endif

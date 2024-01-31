@@ -203,7 +203,8 @@ static void _uart_process_txreq(void) {
 		const uint8_t side = (uart_req.sep.pos_side1) ? 0 : 1;
 		uart_output_buf[1] = FLAP_UNITS + 1;
 		uart_output_buf[2] = UART_MSG_SM_POS;
-		uart_output_buf[3] = side | (flap_target_reached(side) << 1);
+		uart_output_buf[3] = side | (flap_target_reached(side) << 1) |
+			(flap_target_reached_ignore_errors(side) << 2);
 		for (uint8_t i = 0; i < FLAP_UNITS; i++)
 			uart_output_buf[4+i] = flap_pos[side][i];
 		if (uart_send_buf() == 0)
