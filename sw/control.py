@@ -161,13 +161,15 @@ def parse(data: List[int], program) -> None:
     if data[2] == UART_MSG_SM_POS:
         side = data[3] & 1
         target_reached = bool((data[3] >> 1) & 1)
+        target_reached_ignore_error = bool((data[3] >> 2) & 1)
+        fault = not target_reached and target_reached_ignore_error
         positions = data[4:-1]
         assert len(positions) == FLAP_UNITS, f'{len(positions)} != {FLAP_UNITS}'
         if args['<side>'] is None or side == args['<side>']:
             if args['--pos']:
                 logging.info(f'Side: {side_str(side)} Positions: {positions}')
             if getattr(program, 'received_positions', None):
-                program.received_positions(positions, side, target_reached)
+                program.received_positions(positions, side, target_reached, fault)
         else:
             logging.debug('Side mismatch')
 
@@ -339,7 +341,7 @@ class SetPositions:
         elif args['set_positions']:
             self.content = json.loads(input())
 
-    def received_positions(self, positions: List[int], side: int, target_reached: bool) -> None:
+    def received_positions(self, positions: List[int], side: int, target_reached: bool, fault: bool) -> None:
         if not self.positions_sent and all([pos != 0xFF for pos in positions]):
             self.positions_sent = True
             self.sent_positions = flap_all_positions(self.content)
@@ -362,7 +364,7 @@ class Flap:
         self.sent = False
         logging.info('Waiting for device initialized...')
 
-    def received_positions(self, positions: List[int], side: int, target_reached: bool) -> None:
+    def received_positions(self, positions: List[int], side: int, target_reached: bool, fault: bool) -> None:
         if all([pos != 0xFF for pos in positions]) and not self.sent:
             logging.info('Sending flap...')
             send(self.sport, UART_MSG_MS_FLAP, [args['<side>'], int(args['<flapid>'])])
@@ -395,12 +397,13 @@ class State:
 
         sys.exit(0)
 
-    def received_positions(self, positions: List[int], side: int, target_reached: bool) -> None:
+    def received_positions(self, positions: List[int], side: int, target_reached: bool, fault: bool) -> None:
         logging.info('Positions received.')
         if side == args['<side>']:
             self.received['current'] = explain_positions(positions)
             self.received['current']['side'] = side
             self.received['current']['target_reached'] = target_reached
+            self.received['current']['fault'] = fault
 
             if 'target' in self.received:
                 self.dump_and_exit()
