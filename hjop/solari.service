@@ -1,0 +1,13 @@
+[Unit]
+Description=Solari-hJOP connection
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+ExecStart=/bin/bash /root/solari-control/hjop/prod_solari.sh
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/root/solari-control/hjop
+Restart=on-failure
