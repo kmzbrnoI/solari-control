@@ -237,8 +237,11 @@ def flap_delay(delay: str) -> int:
 
 
 def flap_all_positions(content: Dict) -> List[int]:  # always returns list of length FLAP_UNITS
-    final = flap_final(content.get('final', ''))
-    assert len(final) == FLAP_FINAL_LEN
+    final_str = content.get('final', '')
+    if len(final_str) > FLAP_FINAL_LEN:
+        final_str = final_str[:FLAP_FINAL_LEN-1] + '.'
+    final = flap_final(final_str)
+    assert len(final) == FLAP_FINAL_LEN, f'Invalid length: {len(final)}!'
 
     hours, minutes = map(int, content['time'].split(':')) if 'time' in content else (0xFF, 0xFF)
 
