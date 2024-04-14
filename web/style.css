@@ -1,3 +1,317 @@
+:root {
+  --dark: #141414;
+  --background: #222222;
+  --white: #f8f8fa;
+  --tab: #dddddd;
+  --red: #fb2e01;
+}
+
 body {
-  font-family: sans-serif;
+  font-family: monospace;
+  background-color: var(--tab);
+  height: 100vh;
+  display: flex;
+  margin: 0;
+}
+
+.table-main {
+  background-color: var(--background);
+  border: var(--dark) solid 0.5rem;
+}
+
+.table-main-control {
+  background-color: var(--tab);
+  border: var(--background) solid 0.5rem;
+}
+
+.table-main:not(:last-child){
+  margin-bottom: 4rem;
+}
+
+.table-A {
+  display: grid;
+  grid-template-columns: 0.25fr 0.25fr 0.5fr;
+  column-gap: 1.2em;
+  row-gap: 1.2em;
+  padding: 2rem 2rem 1rem 2rem
+}
+
+.table-B {
+  display: grid;
+  grid-template-columns: 0.5fr 0.5fr 0.1fr 0.15fr 0.25fr;
+  column-gap: 1.2em;
+  row-gap: 1.2em;
+  padding: 1rem 2rem 2rem 2rem
+}
+
+.td-direction-name {
+  grid-column: 1/span 3;
+}
+
+.label {
+  color: var(--white);
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.option-select {
+  color: var(--white);
+  background-color: var(--background);
+  border: none;
+  box-shadow: 0 0 0.2rem 0.2rem var(--dark);
+  font-size: 1.6rem;
+  font-weight: 500;
+  padding: 0;
+  height: 2.5rem;
+  font-family: monospace;
+  transition: .4s;
+}
+
+.option-select-red {
+  background-color: var(--red) !important;
+}
+
+input[type="text"] {
+  width: 100%;
+}
+
+input[type="number"] {
+  -webkit-appearance: textfield;
+     -moz-appearance: textfield;
+          appearance: textfield;
+}
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none;
+}
+
+input[type="time"] {
+  padding: 0;
+}
+
+.option-select-train-num {
+  width: 10ch;
+}
+
+.option-select-direction {
+  width: 100%;
+}
+
+p {
+  margin: 0;
+}
+
+.text {
+  margin: auto;
+  font-size: 1.2rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  margin: 0.25rem auto;
+}
+
+.text-header {
+  font-size: 2rem;
+  text-align: center;
+  font-weight: 700;
+  margin: 5vh auto auto auto;
+}
+
+.site-body {
+  margin: 0 auto;
+  position: relative;
+}
+
+@media screen and (zoom: 200%) {
+  /* your CSS styles here */
+}
+
+.table-C {
+  display: grid;
+  grid-template-columns: 0.5fr 0.5fr;
+  column-gap: 1.2em;
+  padding: 2rem;
+  row-gap: 2rem;
+  justify-content: center;
+}
+
+.table-C-cell {
+  align-items: center;
+  display: flex;
+  margin: auto;
+  font-family: monospace;
+  color: var(--background);
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.table-C-btn {
+  padding: 0.5rem;
+  height: auto;
+  background-color: var(--tab);
+  box-shadow: none;
+  border: var(--background) 0.2rem solid;
+  color: var(--background);
+  transition: .4s;
+}
+
+.table-C-btn:hover {
+  border: var(--red) 0.2rem solid;
+  background-color: var(--white);
+  transition: .4s;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 3rem;
+  height: 1.9rem;
+  margin: 0 0.5rem;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--background);
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 1.5rem;
+  width: 1.5rem;
+  left: 0.2rem;
+  bottom: 0.2rem;
+  background-color: var(--white);
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: var(--red);
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(1.2rem);
+  -ms-transform: translateX(1.2rem);
+  transform: translateX(1.2rem);
+}
+
+.text2 {
+  position: absolute;
+  width: 36ch;
+  top: 0.12rem;
+  left: calc(1.5rem - 17ch);
+}
+
+.enabledText {
+  background-color: var(--red);
+  transition: .4s;
+}
+
+.spec {
+  width: 39ch;
+  left: calc(1.5rem - 20ch);
+}
+
+.text2:before {
+  content: "Černé číslo vlaku";
+  position: relative;
+  left: -2rem;
+  transition: .4s;
+}
+
+input:checked + .slider + .text2:before  {
+  opacity: 0.3;
+  transition: .4s;
+}
+
+.text2:after {
+  content: "Červené číslo vlaku";
+  position: relative;
+  right: -2rem;
+  opacity: 0.3;
+  transition: .4s;
+}
+
+input:checked + .slider + .text2::after  {
+  opacity: 1;
+  transition: .4s;
+}
+
+.spec:before {
+  content: "Přední strana tabule";
+}
+
+.spec:after {
+  content: "Zadní strana tabule";
+}
+
+.custom-select {
+  position: relative;
+  width: 100%;
+  height: 2.5rem;
+}
+
+.custom-select select {
+  display: none;
+}
+
+.select-header:after {
+  position: absolute;
+  content: "";
+  top: 1rem;
+  right: 0.6rem;
+  width: 0;
+  height: 0;
+  border: 0.5rem solid transparent;
+  border-color: var(--white) transparent transparent transparent;
+}
+
+.select-items div {
+  color: var(--white);
+  cursor: pointer;
+  user-select: none;
+  opacity: 0.3;
+  min-height: 2.5rem;
+  transition: .4s;
+  background-color: var(--background);
+}
+
+.select-items div:hover {
+  opacity: 1;
+  transition: .4s;
+}
+
+.select-items {
+  position: absolute;
+  background-color: var(--dark);
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  box-shadow: 0 0 0.2rem 0.2rem var(--dark);
+  height: 30vh;
+  overflow: scroll;
+}
+
+.select-hide {
+  display: none;
+}
+
+.select-header {
+  height: 100%;
 }
