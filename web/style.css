@@ -1,6 +1,7 @@
 :root {
   --dark: #141414;
   --background: #222222;
+  --light-background: #3b3b3b;
   --white: #f8f8fa;
   --tab: #dddddd;
   --red: #fb2e01;
@@ -50,16 +51,20 @@ body {
 
 .label {
   color: var(--white);
-  font-size: 1.2rem;
+  font-size: 1.6em;
   font-weight: 800;
+}
+
+label.switch {
+  font-size: 0.8em;
 }
 
 .option-select {
   color: var(--white);
-  background-color: var(--background);
+  background-color: var(--light-background);
   border: none;
   box-shadow: 0 0 0.2rem 0.2rem var(--dark);
-  font-size: 1.6rem;
+  font-size: 1.5em;
   font-weight: 500;
   padding: 0;
   height: 2.5rem;
@@ -72,13 +77,20 @@ body {
 }
 
 input[type="text"] {
-  width: 100%;
+  width: calc(100% - 0.5em);
+  padding: 0 0.25em;
+}
+
+input[type="submit"] {
+  font-size: 1.6rem;
 }
 
 input[type="number"] {
   -webkit-appearance: textfield;
-     -moz-appearance: textfield;
-          appearance: textfield;
+  -moz-appearance: textfield;
+  appearance: textfield;
+  width: 11ch;
+  padding: 0 0.25em;
 }
 
 input[type=number]::-webkit-inner-spin-button, 
@@ -87,11 +99,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 input[type="time"] {
-  padding: 0;
-}
-
-.option-select-train-num {
-  width: 10ch;
+  padding: 0 0.25em;
 }
 
 .option-select-direction {
@@ -104,14 +112,14 @@ p {
 
 .text {
   margin: auto;
-  font-size: 1.2rem;
+  font-size: 1.6em;
   font-weight: 500;
   text-transform: uppercase;
   margin: 0.25rem auto;
 }
 
 .text-header {
-  font-size: 2rem;
+  font-size: 2.5em;
   text-align: center;
   font-weight: 700;
   margin: 5vh auto auto auto;
@@ -120,10 +128,6 @@ p {
 .site-body {
   margin: 0 auto;
   position: relative;
-}
-
-@media screen and (zoom: 200%) {
-  /* your CSS styles here */
 }
 
 .table-C {
@@ -141,7 +145,7 @@ p {
   margin: auto;
   font-family: monospace;
   color: var(--background);
-  font-size: 1.2rem;
+  font-size: 1.6em;
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -213,7 +217,7 @@ input:checked + .slider:before {
 .text2 {
   position: absolute;
   width: 36ch;
-  top: 0.12rem;
+  top: 4pt;
   left: calc(1.5rem - 17ch);
 }
 
@@ -262,8 +266,8 @@ input:checked + .slider + .text2::after  {
 
 .custom-select {
   position: relative;
-  width: 100%;
   height: 2.5rem;
+  line-height: 2.5rem;
 }
 
 .custom-select select {
@@ -289,6 +293,8 @@ input:checked + .slider + .text2::after  {
   min-height: 2.5rem;
   transition: .4s;
   background-color: var(--background);
+  line-height: 2.5rem;
+  padding: 0 0.25em;
 }
 
 .select-items div:hover {
@@ -314,4 +320,6 @@ input:checked + .slider + .text2::after  {
 
 .select-header {
   height: 100%;
+  padding: 0 0.25em;
+  width: calc(100% - 0.5em);
 }

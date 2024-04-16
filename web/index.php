@@ -53,8 +53,6 @@ usort($inputData["direction1"], "compare");
 usort($inputData["direction2"], "compare");
 usort($inputData["delays"], "compare");
 
-$SIDES = array('A', 'B');
-
 $DEVICE = "/dev/ttyAMA0";
 
 if (isset($_POST["submit"])) {
@@ -155,11 +153,12 @@ if (isset($_POST["submit"])) {
           </div>
           <div>
             <input class="option-select option-select-train-num <?php if (isset($_POST['trainnum_red'])) echo "enabledText" ?>"
-              id="textSwitchSelection" type="number" name="trainnum" max="99999"
+              id="trainNumInput" type="number" name="trainnum" min="0" max="99999"
               value="<?php if (isset($_POST['trainnum'])) echo $_POST['trainnum']; ?>">
           </div>
           <div>
-            <input class="option-select" type="text" name="final" maxlength="14" value="<?php if (isset($_POST['final'])) echo $_POST['final']; ?>">
+            <input class="option-select" type="text" name="final" maxlength="14" id="finalDestInput"
+            value="<?php if (isset($_POST['final'])) echo $_POST['final']; ?>">
           </div>
         </div>
         <!-- Table part B -->
@@ -201,7 +200,8 @@ if (isset($_POST["submit"])) {
           </div>
           <div></div>
           <div>
-            <input type="time" name="time" class="option-select" value="<?php if (isset($_POST['time'])) echo $_POST['time']; ?>">
+            <input type="time" name="time" class="option-select" id="timeInput"
+            value="<?php if (isset($_POST['time'])) echo $_POST['time']; ?>">
           </div>
           <div class="option-select-icon">
             <div class="custom-select option-select">
@@ -325,7 +325,7 @@ if (isset($_POST["submit"])) {
   document.addEventListener("click", closeAllSelect);
 
   function switchText() {
-    let elem = document.getElementById("textSwitchSelection");
+    let elem = document.getElementById("trainNumInput");
     elem.classList.toggle("enabledText");
   }
 
@@ -337,7 +337,7 @@ if (isset($_POST["submit"])) {
       event.target.value = acTrainNum;
     }
   }
-  document.getElementById("textSwitchSelection").addEventListener("input", cutTrainNum);
+  document.getElementById("trainNumInput").addEventListener("input", cutTrainNum);
 
   window.addEventListener("resize", setSizes);
          
@@ -346,14 +346,13 @@ if (isset($_POST["submit"])) {
   function setSizes() {
       let zoom = window.devicePixelRatio;
             
-      bodyElem.style.width = 45 * zoom + "vw";
+      bodyElem.style.width = 50 * zoom + "vw";
 
       if (zoom < 0) {
         zoom = 0;
       }
       for (let elem of textElems) {
         elem.style.fontSize = (1 + 0.25 * Math.log(1 / zoom, 100)) * 100 + "%";
-        console.log(elem)
       }
   }
   setSizes();
