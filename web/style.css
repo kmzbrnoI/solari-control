@@ -2,9 +2,11 @@
   --dark: #141414;
   --background: #222222;
   --light-background: #3b3b3b;
-  --white: #f8f8fa;
+  --white: #e8e8e8;
   --tab: #dddddd;
-  --red: #fb2e01;
+  --red: #c62912;
+  --blue: #08558b;
+  --yellow: #d8bf44;
 }
 
 body {
@@ -64,21 +66,18 @@ label.switch {
   background-color: var(--light-background);
   border: none;
   box-shadow: 0 0 0.2rem 0.2rem var(--dark);
-  font-size: 1.5em;
-  font-weight: 500;
+  font-size: 1.55em;
+  font-weight: 800;
   padding: 0;
   height: 2.5rem;
   font-family: monospace;
   transition: .4s;
 }
 
-.option-select-red {
-  background-color: var(--red) !important;
-}
-
 input[type="text"] {
   width: calc(100% - 0.5em);
   padding: 0 0.25em;
+  text-transform: uppercase;
 }
 
 input[type="submit"] {
@@ -89,7 +88,7 @@ input[type="number"] {
   -webkit-appearance: textfield;
   -moz-appearance: textfield;
   appearance: textfield;
-  width: 11ch;
+  width: 10ch;
   padding: 0 0.25em;
 }
 
@@ -128,6 +127,7 @@ p {
 .site-body {
   margin: 0 auto;
   position: relative;
+  min-width: 950px;
 }
 
 .table-C {
@@ -322,4 +322,37 @@ input:checked + .slider + .text2::after  {
   height: 100%;
   padding: 0 0.25em;
   width: calc(100% - 0.5em);
+  font-weight: 800;
+}
+
+.table-red {
+  background-color: var(--red) !important;
+}
+
+.table-blue {
+  background-color: var(--blue) !important;
+}
+
+.table-sc {
+  background-color: var(--red) !important;
+  letter-spacing: 0.2rem;
+  font-family: fantasy;
+  font-style: italic;
+}
+
+.table-ec {
+  background-color: var(--white) !important;
+  color: var(--blue) !important;
+  letter-spacing: 0.2rem;
+  font-family: fantasy;
+  font-style: italic;
+}
+
+.table-ec-1 {
+  color: var(--yellow) !important;
+}
+
+.table-red-border {
+  border: 0.15em solid var(--white);
+  padding: 0 0.15em;
 }

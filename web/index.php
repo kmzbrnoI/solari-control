@@ -28,21 +28,22 @@ function setOption($inputData, $selected) {
   $value = $inputData["name"];
   $label = $inputData["name"];
   $selectedAttr = "";
-  $red = "";
+  $style = "";
 
   if (array_key_exists('label', $inputData)) {
+    echo htmlentities (print_r ($inputData["label"], true));
     $label = $inputData["label"];
   }
 
-  if (array_key_exists('red', $inputData) && $inputData['red']) {
-    $red = "class='option-select-red'";
+  if (array_key_exists('style', $inputData) && $inputData['style']) {
+    $style = "class='".$inputData['style']."'";
   }
 
   if ($selected) {
     $selectedAttr = 'selected="selected"';
   }
 
-  return '<option value="'.$value.'"'.$selectedAttr.$red.'>'.$label.'</option>';
+  return '<option value="'.$value.'"'.$selectedAttr.$style.'>'.htmlentities($label).'</option>';
 }
 
 $inputJSON = file_get_contents('data.json');
@@ -85,9 +86,9 @@ if (isset($_POST["submit"])) {
       $dict['delay'] = $_POST['delay'];
 
     if (isset($_POST['side']))
-      $dict['side'] = 'A';
-    else
       $dict['side'] = 'B';
+    else
+      $dict['side'] = 'A';
 
     $encoded = json_encode($dict, JSON_UNESCAPED_UNICODE);
 
@@ -105,16 +106,16 @@ if (isset($_POST["submit"])) {
     $_POST['delay'] = "";
 
     if (isset($_POST['side']))
-      $side = 'A';
-    else
       $side = 'B';
+    else
+      $side = 'A';
 
     exec("../sw/control.py reset ".$DEVICE." ".$side." 2>&1", $output, $retval);
   }
 
   if (isset($output)) {
     echo '<script>console.log("Výstup control.py:")</script>';
-    echo '<script>console.log("'.implode("\n", $output).'")</script>';
+    echo '<script>console.log("'.implode(",", $output).'")</script>';
   }
 }
 ?>
@@ -274,11 +275,25 @@ if (isset($_POST["submit"])) {
 
     for (let j = 0; j < selectElem.length; j++) {
       let option = document.createElement("div");
-      option.innerHTML = selectElem.options[j].innerHTML;
+
+      let innerSelectElem = selectElem.options[j].innerHTML.split("?");
+
+      if (innerSelectElem.length > 1) {
+        for (let i = 0; i < (innerSelectElem.length - 1); i+=2) {
+          let span = document.createElement("span");
+          span.innerHTML = innerSelectElem[i];
+          span.setAttribute("class", innerSelectElem[i + 1]);
+
+          option.appendChild(span);
+        }
+      } else {
+        option.innerHTML = selectElem.options[j].innerHTML;
+      }
+
       option.value = selectElem.options[j].value;
 
-      if (selectElem.options[j].classList.contains("option-select-red")) {
-        option.setAttribute("class", "option-select-red");
+      if (selectElem.options[j].className !== undefined) {
+        option.setAttribute("class", selectElem.options[j].className);
       }
 
       option.addEventListener("click", function(e) {
@@ -286,10 +301,9 @@ if (isset($_POST["submit"])) {
         header.innerHTML = this.innerHTML;
         input.setAttribute("value", this.value);
 
-        if (selectElem.options[j].classList.contains("option-select-red")) {
-          header.classList.toggle("option-select-red");
-        } else {
-          header.setAttribute("class", "select-header");
+        header.setAttribute("class", "select-header");
+        if (selectElem.options[j].className !== "") {
+          header.classList.add(selectElem.options[j].className);
         }
 
         header.click();
@@ -300,10 +314,9 @@ if (isset($_POST["submit"])) {
         header.innerHTML = selectElem.options[j].innerHTML;
         input.setAttribute("value", selectElem.options[j].value);
 
-        if (selectElem.options[j].classList.contains("option-select-red")) {
-          header.classList.toggle("option-select-red");
-        } else {
-          header.setAttribute("class", "select-header");
+        header.setAttribute("class", "select-header");
+        if (selectElem.options[j].className !== "") {
+          header.classList.add(selectElem.options[j].className);
         }
       }
     }
@@ -331,7 +344,8 @@ if (isset($_POST["submit"])) {
 
   let acTrainNum = '';
   function cutTrainNum(event) {
-    if (event.target.validity.valid && (parseInt(event.target.value) < 99999 || event.target.value === "")) {
+    if (event.target.validity.valid && (parseInt(event.target.value) < 99999 || event.target.value === "") &&
+      event.target.value.length < 6) {
       acTrainNum = event.target.value;
     } else {
       event.target.value = acTrainNum;
@@ -346,13 +360,13 @@ if (isset($_POST["submit"])) {
   function setSizes() {
       let zoom = window.devicePixelRatio;
             
-      bodyElem.style.width = 50 * zoom + "vw";
+      bodyElem.style.width = 70 * (1500 / screen.width) * zoom + "vw";
 
       if (zoom < 0) {
         zoom = 0;
       }
       for (let elem of textElems) {
-        elem.style.fontSize = (1 + 0.25 * Math.log(1 / zoom, 100)) * 100 + "%";
+        elem.style.fontSize = (1.15 + 0.25 * Math.log(1 / zoom, 100)) * 100 + "%";
       }
   }
   setSizes();
