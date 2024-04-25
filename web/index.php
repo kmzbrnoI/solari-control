@@ -311,7 +311,19 @@ if (isset($_POST["submit"])) {
       selectBody.appendChild(option);
 
       if (selectElem.options[j].selected) {
-        header.innerHTML = selectElem.options[j].innerHTML;
+        let innerSelectElem = selectElem.options[j].innerHTML.split("?");
+
+        if (innerSelectElem.length > 1) {
+          for (let i = 0; i < (innerSelectElem.length - 1); i+=2) {
+            let span = document.createElement("span");
+            span.innerHTML = innerSelectElem[i];
+            span.setAttribute("class", innerSelectElem[i + 1]);
+
+            header.appendChild(span);
+          }
+        } else {
+          header.innerHTML = selectElem.options[j].innerHTML;
+        }
         input.setAttribute("value", selectElem.options[j].value);
 
         header.setAttribute("class", "select-header");
