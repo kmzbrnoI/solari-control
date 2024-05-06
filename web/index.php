@@ -353,8 +353,13 @@ if (isset($_POST["submit"])) {
 
     header.addEventListener("click", function(e) {
       e.stopPropagation();
-      closeAllSelect();
-      this.nextSibling.classList.toggle("select-hide");
+      if (this.nextSibling.classList.contains("select-hide")) {
+        closeAllSelect();
+        this.nextSibling.classList.toggle("select-hide");
+        header.classList.toggle("select-header-ico");
+      } else {
+        closeAllSelect();
+      }
     });
   }
 
@@ -362,6 +367,7 @@ if (isset($_POST["submit"])) {
     let selectDivs = document.getElementsByClassName("select-items");
     for (i = 0; i < selectDivs.length; i++) {
       selectDivs[i].classList.add("select-hide");
+      selectDivs[i].previousSibling.classList.remove("select-header-ico");
     }
   }
   document.addEventListener("click", closeAllSelect);

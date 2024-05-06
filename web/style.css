@@ -292,14 +292,24 @@ input:checked + .slider + .text2::after  {
 
 .select-header:after {
   position: absolute;
-  content: "";
-  top: 1rem;
-  right: 0.6rem;
-  width: 0;
-  height: 0;
-  border: 0.5rem solid transparent;
-  border-color: var(--white) transparent transparent transparent;
+  font-family: FontAwesome;
+  content: "\f13a";
+  right: 0.5rem;
   mix-blend-mode: difference;
+  color: var(--white);
+  font-style: initial;
+  letter-spacing: 0;
+}
+
+.select-header-ico:after {
+  position: absolute;
+  font-family: FontAwesome;
+  content: "\f139";
+  right: 0.5rem;
+  mix-blend-mode: difference;
+  color: var(--white);
+  font-style: initial;
+  letter-spacing: 0;
 }
 
 .select-items div {
