@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="robots" content="noindex,nofollow">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <title>Nástupištní tabule Solari di Udine</title>
 </head>
 
@@ -280,11 +281,19 @@ if (isset($_POST["submit"])) {
 
       if (innerSelectElem.length > 1) {
         for (let i = 0; i < (innerSelectElem.length - 1); i+=2) {
-          let span = document.createElement("span");
-          span.innerHTML = innerSelectElem[i];
-          span.setAttribute("class", innerSelectElem[i + 1]);
+          if (innerSelectElem[i].includes('fa fa-')) {
+            let ico = document.createElement("i");
+            ico.setAttribute("class", innerSelectElem[i]);
+            ico.classList.add(innerSelectElem[i + 1]);
 
-          option.appendChild(span);
+            option.appendChild(ico);
+          } else {
+            let span = document.createElement("span");
+            span.innerHTML = innerSelectElem[i];
+            span.setAttribute("class", innerSelectElem[i + 1]);
+
+            option.appendChild(span);
+          }
         }
       } else {
         option.innerHTML = selectElem.options[j].innerHTML;
@@ -315,11 +324,19 @@ if (isset($_POST["submit"])) {
 
         if (innerSelectElem.length > 1) {
           for (let i = 0; i < (innerSelectElem.length - 1); i+=2) {
+            if (innerSelectElem[i].includes('fa fa-')) {
+            let ico = document.createElement("i");
+            ico.setAttribute("class", innerSelectElem[i]);
+            ico.classList.add(innerSelectElem[i + 1]);
+
+            header.appendChild(ico);
+          } else {
             let span = document.createElement("span");
             span.innerHTML = innerSelectElem[i];
             span.setAttribute("class", innerSelectElem[i + 1]);
 
             header.appendChild(span);
+          }
           }
         } else {
           header.innerHTML = selectElem.options[j].innerHTML;
