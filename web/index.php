@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="robots" content="noindex,nofollow">
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="./fonts/font-awesome.min.css">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
   <title>Nástupištní tabule Solari di Udine</title>
 </head>
 
